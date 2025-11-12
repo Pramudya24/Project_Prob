@@ -19,7 +19,7 @@ class SwakelolaResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    // protected static ?string $navigationLabel = 'Swakelola';
+    protected static ?string $navigationLabel = 'Swakelola';
 
     public static function getModelLabel(): string
     {
