@@ -13,7 +13,7 @@ class EditEpurcasing extends EditRecord
     // ✅ TAMBAHKAN INI - Redirect setelah edit
     protected function getRedirectUrl(): string
     {
-        return PlResource::getUrl('index');
+        return EpurcasingResource::getUrl('index');
     }
 
     // ✅ OPSIONAL: Notifikasi sukses edit
