@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
-class nontender extends Model
+
+class PengadaanDarurat extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'nontenders';
+    protected $table = 'pengadaan_darurat';
 
     protected $fillable = [
         'nama_opd',
@@ -58,10 +59,12 @@ protected static function getInisial($namaOpd)
     }
     
     return $inisial;
+
 }
 
-public function rombongans(): MorphToMany
-{
-    return $this->morphToMany(rombongan::class, 'item', 'rombongan_items');
-}
+public function rombongans()
+    {
+        return $this->belongsToMany(Rombongan::class, 'rombongan_items', 'item_id', 'rombongan_id')
+                    ->wherePivot('item_type', self::class);
+    }
 }

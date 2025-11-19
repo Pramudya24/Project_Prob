@@ -3,15 +3,14 @@
 namespace App\Filament\Opd\Resources;
 
 use App\Filament\Opd\Resources\NonTenderResource\Pages;
-use App\Filament\Opd\Resources\NonTenderResource\RelationManagers;
-use App\Models\nontender;
+use App\Models\NonTender;
+use App\Models\Rombongan;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Collection;
 
 class NonTenderResource extends Resource
 {
@@ -19,30 +18,29 @@ class NonTenderResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationLabel = 'Non Tender';
+    protected static ?string $navigationLabel = 'Pencatatan Non Tender';
+
+    protected static ?string $navigationGroup = 'Form';
 
     public static function getModelLabel(): string
     {
-        return 'Data Non Tender'; // Singular name
+        return 'Data Non Tender';
     }
     
-    protected static ?string $pluralModelLabel = 'Non Tender';
+    protected static ?string $pluralModelLabel = 'Data Non Tender';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Hidden::make('user_id')
-                ->default(auth()->id())
-                ->required(),
                 Forms\Components\Section::make('Informasi Dasar')
                     ->schema([
                         Forms\Components\DatePicker::make('tanggal_dibuat')
                             ->label('Tanggal dibuat')
                             ->required()
                             ->default(now())
-                            ->readOnly()  // Readonly di semua operasi (create & edit)
-                            ->dehydrated() // Data tetap masuk ke database
+                            ->readOnly()
+                            ->dehydrated()
                             ->native(false)
                             ->displayFormat('d/m/Y'),
 
@@ -55,20 +53,24 @@ class NonTenderResource extends Resource
                             ->label('Kode RUP')
                             ->required()
                             ->numeric()
-                            ->maxLength(255),
+                            ->integer(), 
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
+                            ->required()
                             ->numeric()
-                            ->prefix('Rp')
-                            ->maxLength(255),
+                            ->prefix('Rp'),
 
                         Forms\Components\TextInput::make('kode_paket')
                             ->label('Kode Paket')
+                            ->required()
                             ->maxLength(255),
                     ])
                     ->columns(2),
-                Forms\Components\Select::make('jenis_pengadaan')
+
+                Forms\Components\Section::make('Detail Pengadaan')
+                    ->schema([
+                        Forms\Components\Select::make('jenis_pengadaan')
                             ->label('Jenis Pengadaan')
                             ->options([
                                 'Barang' => 'Barang',
@@ -77,12 +79,11 @@ class NonTenderResource extends Resource
                                 'Jasa Lainnya' => 'Jasa Lainnya',
                                 'Terintegrasi' => 'Terintegrasi',
                             ])
+                            ->required()
                             ->native(false),
-                // Forms\Components\TextInput::make('surat_pesanan')
-                //     ->maxLength(255)
-                //     ->default(null),
-                // BARIS 2: PDN/TKDN/IMPOR dan Nilainya
-                // BARIS 1: Nilai Kontrak
+
+                Forms\Components\Section::make('Nilai Kontrak & Komponen')
+                    ->schema([
                         Forms\Components\TextInput::make('nilai_kontrak')
                             ->label('Nilai Kontrak')
                             ->numeric()
@@ -110,15 +111,15 @@ class NonTenderResource extends Resource
 
                         Forms\Components\Grid::make()
                             ->schema([
-                                // Kolom 1: Radio Button
                                 Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
                                     ->schema([
                                         Forms\Components\Radio::make('pdn_tkdn_impor')
                                             ->options([
                                                 'PDN' => 'PDN',
-                                                'TKDN' => 'TKDN', 
+                                                'TKDN' => 'TKDN',
                                                 'IMPOR' => 'IMPOR',
                                             ])
+                                            ->required()
                                             ->live()
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 $nilaiKontrak = $get('nilai_kontrak');
@@ -138,26 +139,18 @@ class NonTenderResource extends Resource
                                     ])
                                     ->columnSpan(1),
 
-                                // Kolom 2: Conditional Fields
                                 Forms\Components\Group::make()
                                     ->schema([
-                                        // Untuk PDN & IMPOR
                                         Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
                                             ->label('Nilai PDN/TKDN/IMPOR')
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
                                             ->prefix('Rp')
-                                            ->visible(fn (Forms\Get $get): bool => 
+                                            ->visible(fn (Forms\Get $get): bool =>
                                                 in_array($get('pdn_tkdn_impor'), ['PDN', 'IMPOR'])
-                                            )
-                                            ->helperText(fn (Forms\Get $get): string => 
-                                                $get('pdn_tkdn_impor') === 'IMPOR' 
-                                                    ? 'Otomatis 0 untuk IMPOR' 
-                                                    : 'Otomatis terisi sesuai nilai kontrak'
                                             ),
 
-                                        // Untuk TKDN
                                         Forms\Components\Grid::make()
                                             ->schema([
                                                 Forms\Components\TextInput::make('persentase_tkdn')
@@ -166,6 +159,7 @@ class NonTenderResource extends Resource
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
+                                                    ->required()
                                                     ->live(onBlur: true)
                                                     ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                         $nilaiKontrak = $get('nilai_kontrak');
@@ -179,11 +173,10 @@ class NonTenderResource extends Resource
                                                     ->numeric()
                                                     ->disabled()
                                                     ->dehydrated()
-                                                    ->prefix('Rp')
-                                                    ->helperText('Hasil: Nilai Kontrak × Persentase TKDN'),
+                                                    ->prefix('Rp'),
                                             ])
                                             ->columns(2)
-                                            ->visible(fn (Forms\Get $get): bool => 
+                                            ->visible(fn (Forms\Get $get): bool =>
                                                 $get('pdn_tkdn_impor') === 'TKDN'
                                             ),
                                     ])
@@ -191,7 +184,6 @@ class NonTenderResource extends Resource
                             ])
                             ->columns(2),
 
-                        // BARIS 3: UMK/Non UMK dan Nilainya
                         Forms\Components\Grid::make()
                             ->schema([
                                 Forms\Components\Fieldset::make('UMK / Non UMK')
@@ -201,6 +193,7 @@ class NonTenderResource extends Resource
                                                 'UMK' => 'UMK',
                                                 'Non UMK' => 'Non UMK',
                                             ])
+                                            ->required()
                                             ->live()
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 $nilaiKontrak = $get('nilai_kontrak');
@@ -221,25 +214,22 @@ class NonTenderResource extends Resource
                                     ->disabled()
                                     ->dehydrated()
                                     ->prefix('Rp')
-                                    ->helperText(fn (Forms\Get $get): string =>
-                                        $get('umk_non_umk') === 'Non UMK'
-                                            ? 'Otomatis 0 untuk Non UMK'
-                                            : 'Otomatis terisi sesuai nilai kontrak'
-                                    )
                                     ->columnSpan(1),
                             ])
                             ->columns(2),
-                Forms\Components\FileUpload::make('realisasi')
+                            Forms\Components\FileUpload::make('realisasi')
                             ->label('Realisasi')
+                            ->required()
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
                             ->maxSize(5120)
                             ->directory('realisasi')
                             ->downloadable()
                             ->openable()
                             ->helperText('Upload file JPG/PDF (Max: 5MB)'),
-                // Forms\Components\TextInput::make('serah_terima'),
-                // Forms\Components\Textarea::make('penilaian_kinerja')
-                //     ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+
+                    ]),
             ]);
     }
 
@@ -248,35 +238,65 @@ class NonTenderResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('tanggal_dibuat')
-                    ->label('Tanggal dibuat')
+                    ->label('Tanggal')
                     ->date('d/m/Y')
                     ->sortable(),
-
                 Tables\Columns\TextColumn::make('nama_pekerjaan')
                     ->label('Nama Pekerjaan')
                     ->searchable()
                     ->limit(50)
                     ->wrap(),
-
                 Tables\Columns\TextColumn::make('kode_rup')
                     ->label('Kode RUP')
                     ->searchable(),
-
                 Tables\Columns\TextColumn::make('pagu_rup')
                     ->label('Pagu RUP')
                     ->money('IDR')
                     ->sortable(),
-
                 Tables\Columns\TextColumn::make('nilai_kontrak')
                     ->label('Nilai Kontrak')
                     ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
-
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Dibuat')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                
+                // ✅ ACTION TAMBAH KE ROMBONGAN - SAMA SEPERTI PL
+                Tables\Actions\Action::make('add_to_rombongan')
+                    ->label('Tambahkan ke Rombongan')
+                    ->icon('heroicon-o-plus-circle')
+                    ->color('success')
+                    ->form([
+                        Forms\Components\Select::make('rombongan_id')
+                            ->label('Pilih Rombongan')
+                            ->options(Rombongan::all()->pluck('nama_rombongan', 'id'))
+                            ->required()
+                            ->searchable(),
+                    ])
+                    ->action(function (NonTender $record, array $data) {
+                        $rombonganId = $data['rombongan_id'];
+                        
+                        // Gunakan method addItem dari Model Rombongan
+                        $rombongan = Rombongan::find($rombonganId);
+                        $result = $rombongan->addItem('App\Models\NonTender', $record->id);
+                        
+                        if ($result) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Berhasil ditambahkan ke rombongan')
+                                ->success()
+                                ->send();
+                        } else {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Data sudah ada dalam rombongan')
+                                ->warning()
+                                ->send();
+                        }
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('Tambahkan ke Rombongan')
+                    ->modalSubmitActionLabel('Tambahkan'),
+                    
+                Tables\Actions\DeleteAction::make(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('jenis_pengadaan')
@@ -289,21 +309,49 @@ class NonTenderResource extends Resource
                         'Terintegrasi' => 'Terintegrasi',
                     ]),
             ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    
+                    // ✅ BULK ACTION: TAMBAH KE ROMBONGAN - SAMA SEPERTI PL
+                    Tables\Actions\BulkAction::make('add_to_rombongan_bulk')
+                        ->label('Tambahkan ke Rombongan')
+                        ->icon('heroicon-o-plus-circle')
+                        ->color('success')
+                        ->form([
+                            Forms\Components\Select::make('rombongan_id')
+                                ->label('Pilih Rombongan')
+                                ->options(Rombongan::all()->pluck('nama_rombongan', 'id'))
+                                ->required()
+                                ->searchable(),
+                        ])
+                        ->action(function (Collection $records, array $data) {
+                            $rombonganId = $data['rombongan_id'];
+                            $rombongan = Rombongan::find($rombonganId);
+                            $addedCount = 0;
+                            
+                            foreach ($records as $record) {
+                                $result = $rombongan->addItem('App\Models\NonTender', $record->id);
+                                if ($result) {
+                                    $addedCount++;
+                                }
+                            }
+                            
+                            \Filament\Notifications\Notification::make()
+                                ->title("{$addedCount} data berhasil ditambahkan ke rombongan")
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion(),
                 ]),
-            ]);
+            ])
+            ->defaultSort('tanggal_dibuat', 'desc');
     }
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array

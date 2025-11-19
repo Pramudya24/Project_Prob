@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Opd\Resources\Pls\Pages;
+namespace App\Filament\Opd\Resources\Pls\Pages;  // ← Ganti jadi Pls
 
 use App\Filament\Opd\Resources\Pls\PlResource;
-use Filament\Actions\CreateAction;
+use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListPls extends ListRecords
@@ -13,7 +13,7 @@ class ListPls extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            Actions\CreateAction::make(),
         ];
     }
 }

@@ -3,30 +3,32 @@
 namespace App\Filament\Opd\Resources;
 
 use App\Filament\Opd\Resources\EpurcasingResource\Pages;
-use App\Filament\Opd\Resources\EpurcasingResource\RelationManagers;
-use App\Models\epurcasing;
+use App\Models\Epurcasing;
+use App\Models\Rombongan;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Collection;
 
 class EpurcasingResource extends Resource
 {
-    protected static ?string $model = epurcasing::class;
+    protected static ?string $model = Epurcasing::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     
     protected static ?string $navigationLabel = 'Epurcasing';
 
+    protected static ?string $navigationGroup = 'Form';
+
     public static function getModelLabel(): string
     {
-        return 'Data Epurcasing'; // Singular name
+        return 'Data Epurcasing';
     }
     
-    protected static ?string $pluralModelLabel = 'Epurcasing';
+    protected static ?string $pluralModelLabel = 'Data Epurcasing';
 
     public static function form(Form $form): Form
     {
@@ -34,15 +36,12 @@ class EpurcasingResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Informasi Dasar')
                     ->schema([
-                        Forms\Components\Hidden::make('user_id')
-                        ->default(auth()->id())
-                        ->required(),
                         Forms\Components\DatePicker::make('tanggal_dibuat')
                             ->label('Tanggal dibuat')
                             ->required()
                             ->default(now())
-                            ->readOnly()  // Readonly di semua operasi (create & edit)
-                            ->dehydrated() // Data tetap masuk ke database
+                            ->readOnly()
+                            ->dehydrated()
                             ->native(false)
                             ->displayFormat('d/m/Y'),
 
@@ -55,16 +54,17 @@ class EpurcasingResource extends Resource
                             ->label('Kode RUP')
                             ->required()
                             ->numeric()
-                            ->maxLength(255),
+                            ->integer(), 
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
+                            ->required()
                             ->numeric()
-                            ->prefix('Rp')
-                            ->maxLength(255),
+                            ->prefix('Rp'),
 
                         Forms\Components\TextInput::make('kode_paket')
                             ->label('Kode Paket')
+                            ->required()
                             ->maxLength(255),
                     ])
                     ->columns(2),
@@ -73,6 +73,7 @@ class EpurcasingResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('jenis_pengadaan')
                             ->label('Jenis Pengadaan')
+                            ->required()
                             ->options([
                                 'Barang' => 'Barang',
                                 'Pekerjaan Konstruksi' => 'Pekerjaan Konstruksi',
@@ -82,20 +83,20 @@ class EpurcasingResource extends Resource
                             ])
                             ->native(false),
 
-                            Forms\Components\FileUpload::make('summary_report')
-                                ->label('Summary Report')
-                                ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
-                                ->maxSize(5120)
-                                ->directory('summary-reports')
-                                ->downloadable()
-                                ->openable()
-                                ->helperText('Upload file JPG/PDF (Max: 5MB)'),
+                        Forms\Components\FileUpload::make('summary_report')
+                            ->label('Summary Report')
+                            ->required()
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
+                            ->maxSize(5120)
+                            ->directory('summary-reports')
+                            ->downloadable()
+                            ->openable()
+                            ->helperText('Upload file JPG/PDF (Max: 5MB)'),
                     ])
                     ->columns(2),
 
                 Forms\Components\Section::make('Nilai Kontrak & Komponen')
                     ->schema([
-                        // BARIS 1: Nilai Kontrak
                         Forms\Components\TextInput::make('nilai_kontrak')
                             ->label('Nilai Kontrak')
                             ->numeric()
@@ -121,13 +122,13 @@ class EpurcasingResource extends Resource
                             })
                             ->columnSpanFull(),
 
-                        // BARIS 2: PDN/TKDN/IMPOR dan Nilainya
                         Forms\Components\Grid::make()
                             ->schema([
-                                // Kolom 1: Radio Button
                                 Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
                                     ->schema([
                                         Forms\Components\Radio::make('pdn_tkdn_impor')
+                                            ->label('Pilih salah satu')
+                                            ->required()
                                             ->options([
                                                 'PDN' => 'PDN',
                                                 'TKDN' => 'TKDN', 
@@ -152,10 +153,8 @@ class EpurcasingResource extends Resource
                                     ])
                                     ->columnSpan(1),
 
-                                // Kolom 2: Conditional Fields
                                 Forms\Components\Group::make()
                                     ->schema([
-                                        // Untuk PDN & IMPOR
                                         Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
                                             ->label('Nilai PDN/TKDN/IMPOR')
                                             ->numeric()
@@ -164,14 +163,8 @@ class EpurcasingResource extends Resource
                                             ->prefix('Rp')
                                             ->visible(fn (Forms\Get $get): bool => 
                                                 in_array($get('pdn_tkdn_impor'), ['PDN', 'IMPOR'])
-                                            )
-                                            ->helperText(fn (Forms\Get $get): string => 
-                                                $get('pdn_tkdn_impor') === 'IMPOR' 
-                                                    ? 'Otomatis 0 untuk IMPOR' 
-                                                    : 'Otomatis terisi sesuai nilai kontrak'
                                             ),
 
-                                        // Untuk TKDN
                                         Forms\Components\Grid::make()
                                             ->schema([
                                                 Forms\Components\TextInput::make('persentase_tkdn')
@@ -180,6 +173,7 @@ class EpurcasingResource extends Resource
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
+                                                    ->required(fn (Forms\Get $get): bool => $get('pdn_tkdn_impor') === 'TKDN')
                                                     ->live(onBlur: true)
                                                     ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                         $nilaiKontrak = $get('nilai_kontrak');
@@ -187,14 +181,6 @@ class EpurcasingResource extends Resource
                                                         $hasil = $nilaiKontrak * ($persentase / 100);
                                                         $set('nilai_pdn_tkdn_impor', $hasil);
                                                     }),
-
-                                                Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
-                                                    ->label('Hasil TKDN')
-                                                    ->numeric()
-                                                    ->disabled()
-                                                    ->dehydrated()
-                                                    ->prefix('Rp')
-                                                    ->helperText('Hasil: Nilai Kontrak × Persentase TKDN'),
                                             ])
                                             ->columns(2)
                                             ->visible(fn (Forms\Get $get): bool => 
@@ -205,12 +191,12 @@ class EpurcasingResource extends Resource
                             ])
                             ->columns(2),
 
-                        // BARIS 3: UMK/Non UMK dan Nilainya
                         Forms\Components\Grid::make()
                             ->schema([
                                 Forms\Components\Fieldset::make('UMK / Non UMK')
                                     ->schema([
                                         Forms\Components\Radio::make('umk_non_umk')
+                                            ->required()
                                             ->options([
                                                 'UMK' => 'UMK',
                                                 'Non UMK' => 'Non UMK',
@@ -235,11 +221,6 @@ class EpurcasingResource extends Resource
                                     ->disabled()
                                     ->dehydrated()
                                     ->prefix('Rp')
-                                    ->helperText(fn (Forms\Get $get): string =>
-                                        $get('umk_non_umk') === 'Non UMK'
-                                            ? 'Otomatis 0 untuk Non UMK'
-                                            : 'Otomatis terisi sesuai nilai kontrak'
-                                    )
                                     ->columnSpan(1),
                             ])
                             ->columns(2),
@@ -249,6 +230,7 @@ class EpurcasingResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('serah_terima_pekerjaan')
                             ->label('Serah Terima Pekerjaan')
+                            ->required()
                             ->options([
                                 'BAST' => 'BAST',
                                 'On Progres' => 'On Progres',
@@ -258,26 +240,22 @@ class EpurcasingResource extends Resource
 
                         Forms\Components\FileUpload::make('bast_document')
                             ->label('Upload BAST')
+                            ->required(fn (Forms\Get $get): bool => $get('serah_terima_pekerjaan') === 'BAST')
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
                             ->maxSize(5120)
                             ->directory('bast-documents')
                             ->downloadable()
                             ->openable()
-                            ->helperText('Upload file BAST (JPG/PNG/PDF, Max: 5MB)')
                             ->visible(fn (Forms\Get $get): bool => 
                                 $get('serah_terima_pekerjaan') === 'BAST'
                             ),
 
                         Forms\Components\Select::make('penilaian_kinerja')
                             ->label('Penilaian Kinerja')
-                            ->options([
-                                'Baik Sekali' => 'Baik Sekali',
-                                'Baik' => 'Baik',
-                                'Cukup' => 'Cukup',
-                                'Buruk' => 'Buruk',
-                                'Belum Dinilai' => 'Belum Dinilai',
-                            ])
-                            ->native(false),
+                            ->required()
+                            ->default('no')
+                            ->native(false)
+                            ->disabled(), // Menonaktifkan field
                     ])
                     ->columns(2),
             ]);
@@ -291,32 +269,62 @@ class EpurcasingResource extends Resource
                     ->label('Tanggal')
                     ->date('d/m/Y')
                     ->sortable(),
-
                 Tables\Columns\TextColumn::make('nama_pekerjaan')
                     ->label('Nama Pekerjaan')
                     ->searchable()
                     ->limit(50)
                     ->wrap(),
-
                 Tables\Columns\TextColumn::make('kode_rup')
                     ->label('Kode RUP')
                     ->searchable(),
-
                 Tables\Columns\TextColumn::make('pagu_rup')
                     ->label('Pagu RUP')
                     ->money('IDR')
                     ->sortable(),
-
                 Tables\Columns\TextColumn::make('nilai_kontrak')
                     ->label('Nilai Kontrak')
                     ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
-
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Dibuat')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                
+                // ✅ ACTION TAMBAH KE ROMBONGAN - SAMA SEPERTI PL
+                Tables\Actions\Action::make('add_to_rombongan')
+                    ->label('Tambahkan ke Rombongan')
+                    ->icon('heroicon-o-plus-circle')
+                    ->color('success')
+                    ->form([
+                        Forms\Components\Select::make('rombongan_id')
+                            ->label('Pilih Rombongan')
+                            ->options(Rombongan::all()->pluck('nama_rombongan', 'id'))
+                            ->required()
+                            ->searchable(),
+                    ])
+                    ->action(function (Epurcasing $record, array $data) {
+                        $rombonganId = $data['rombongan_id'];
+                        
+                        // Gunakan method addItem dari Model Rombongan
+                        $rombongan = Rombongan::find($rombonganId);
+                        $result = $rombongan->addItem('App\Models\Epurcasing', $record->id);
+                        
+                        if ($result) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Berhasil ditambahkan ke rombongan')
+                                ->success()
+                                ->send();
+                        } else {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Data sudah ada dalam rombongan')
+                                ->warning()
+                                ->send();
+                        }
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('Tambahkan ke Rombongan')
+                    ->modalSubmitActionLabel('Tambahkan'),
+                    
+                Tables\Actions\DeleteAction::make(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('jenis_pengadaan')
@@ -329,13 +337,41 @@ class EpurcasingResource extends Resource
                         'Terintegrasi' => 'Terintegrasi',
                     ]),
             ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-            ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    
+                    // ✅ BULK ACTION: TAMBAH KE ROMBONGAN - SAMA SEPERTI PL
+                    Tables\Actions\BulkAction::make('add_to_rombongan_bulk')
+                        ->label('Tambahkan ke Rombongan')
+                        ->icon('heroicon-o-plus-circle')
+                        ->color('success')
+                        ->form([
+                            Forms\Components\Select::make('rombongan_id')
+                                ->label('Pilih Rombongan')
+                                ->options(Rombongan::all()->pluck('nama_rombongan', 'id'))
+                                ->required()
+                                ->searchable(),
+                        ])
+                        ->action(function (Collection $records, array $data) {
+                            $rombonganId = $data['rombongan_id'];
+                            $rombongan = Rombongan::find($rombonganId);
+                            $addedCount = 0;
+                            
+                            foreach ($records as $record) {
+                                $result = $rombongan->addItem('App\Models\Epurcasing', $record->id);
+                                if ($result) {
+                                    $addedCount++;
+                                }
+                            }
+                            
+                            \Filament\Notifications\Notification::make()
+                                ->title("{$addedCount} data berhasil ditambahkan ke rombongan")
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion(),
                 ]),
             ])
             ->defaultSort('tanggal_dibuat', 'desc');
