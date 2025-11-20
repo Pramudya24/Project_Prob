@@ -24,7 +24,7 @@ class SwakelolaResource extends Resource
     {
         return 'Data Swakelola';
     }
-    
+
     protected static ?string $pluralModelLabel = 'Data Swakelola';
 
     public static function form(Form $form): Form
@@ -51,7 +51,7 @@ class SwakelolaResource extends Resource
                             ->label('Kode RUP')
                             ->required()
                             ->numeric()
-                            ->integer(), 
+                            ->integer(),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
@@ -127,12 +127,12 @@ class SwakelolaResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('nilai_kontrak')
                     ->label('Nilai Kontrak')
-                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
+                    ->formatStateUsing(fn($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                
+
                 // ✅ ACTION TAMBAH KE ROMBONGAN - SAMA SEPERTI PL
                 Tables\Actions\Action::make('add_to_rombongan')
                     ->label('Tambahkan ke Rombongan')
@@ -147,11 +147,11 @@ class SwakelolaResource extends Resource
                     ])
                     ->action(function (Swakelola $record, array $data) {
                         $rombonganId = $data['rombongan_id'];
-                        
+
                         // Gunakan method addItem dari Model Rombongan
                         $rombongan = Rombongan::find($rombonganId);
                         $result = $rombongan->addItem('App\Models\Swakelola', $record->id);
-                        
+
                         if ($result) {
                             \Filament\Notifications\Notification::make()
                                 ->title('Berhasil ditambahkan ke rombongan')
@@ -167,7 +167,7 @@ class SwakelolaResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Tambahkan ke Rombongan')
                     ->modalSubmitActionLabel('Tambahkan'),
-                    
+
                 Tables\Actions\DeleteAction::make(),
             ])
             ->filters([
@@ -184,7 +184,7 @@ class SwakelolaResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                    
+
                     // ✅ BULK ACTION: TAMBAH KE ROMBONGAN - SAMA SEPERTI PL
                     Tables\Actions\BulkAction::make('add_to_rombongan_bulk')
                         ->label('Tambahkan ke Rombongan')
@@ -201,14 +201,14 @@ class SwakelolaResource extends Resource
                             $rombonganId = $data['rombongan_id'];
                             $rombongan = Rombongan::find($rombonganId);
                             $addedCount = 0;
-                            
+
                             foreach ($records as $record) {
                                 $result = $rombongan->addItem('App\Models\Swakelola', $record->id);
                                 if ($result) {
                                     $addedCount++;
                                 }
                             }
-                            
+
                             \Filament\Notifications\Notification::make()
                                 ->title("{$addedCount} data berhasil ditambahkan ke rombongan")
                                 ->success()

@@ -14,21 +14,18 @@ class RombonganResource extends Resource
     protected static ?string $model = Rombongan::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
-    protected static ?string $navigationLabel = 'Rombongan';
-    protected static ?string $navigationGroup = 'Rombongan';
+    protected static ?string $navigationLabel = 'Pengaduan';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Informasi Rombongan')
-                    ->schema([
-                        // Tidak perlu field input, karena auto generate
-                        Forms\Components\Placeholder::make('info')
-                            ->label('Info')
-                            ->content('Nama rombongan akan digenerate otomatis (Rombongan 1, Rombongan 2, dst)')
-                            ->columnSpanFull(),
-                    ]),
+                Forms\Components\TextInput::make('nama_rombongan')
+                    ->label('Nama Rombongan')
+                    ->required()
+                    ->unique()
+                    ->maxLength(255)
+                    ->placeholder('Masukkan nama rombongan'),
             ]);
     }
 
@@ -59,12 +56,12 @@ class RombonganResource extends Resource
     }
 
     public static function getPages(): array
-{
-    return [
-        'index' => Pages\ListRombongans::route('/'),
-        'create' => Pages\CreateRombongan::route('/create'),
-        'edit' => Pages\EditRombongan::route('/{record}/edit'),
-        'view' => Pages\ViewRombongan::route('/{record}'),
-    ];
-}
+    {
+        return [
+            'index' => Pages\ListRombongans::route('/'),
+            'create' => Pages\CreateRombongan::route('/create'),
+            'edit' => Pages\EditRombongan::route('/{record}/edit'),
+            'view' => Pages\ViewRombongan::route('/{record}'),
+        ];
+    }
 }

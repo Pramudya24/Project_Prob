@@ -24,8 +24,8 @@ class EditRombongan extends EditRecord
                 ->label('Lihat Detail Rombongan')
                 ->icon('heroicon-o-eye')
                 ->color('gray')
-                ->url(fn () => RombonganResource::getUrl('view', ['record' => $this->record])),
-                
+                ->url(fn() => RombonganResource::getUrl('view', ['record' => $this->record])),
+
             Actions\DeleteAction::make()
                 ->label('Hapus Rombongan'),
         ];
@@ -41,35 +41,46 @@ class EditRombongan extends EditRecord
                         Forms\Components\TextInput::make('nama_rombongan')
                             ->label('Nama Rombongan')
                             ->disabled(),
-                            
+
                         Forms\Components\Textarea::make('keterangan')
                             ->label('Keterangan')
                             ->columnSpanFull()
                             ->disabled(),
                     ])
                     ->columns(1),
-                    
+
                 Forms\Components\Section::make('Statistik')
                     ->schema([
                         Forms\Components\Grid::make(2)
                             ->schema([
                                 Forms\Components\Placeholder::make('total_items')
                                     ->label('Total Data')
-                                    ->content(fn ($record) => $record->items()->count()),
-                                    
+                                    ->content(fn($record) => $record->items()->count()),
+
                                 Forms\Components\Placeholder::make('total_nilai')
                                     ->label('Total Nilai')
-                                    ->content(fn ($record) => 'Rp ' . number_format($record->items()->with('item')->get()->sum(function($item) {
+                                    ->content(fn($record) => 'Rp ' . number_format($record->items()->with('item')->get()->sum(function ($item) {
                                         return $item->item->nilai_kontrak ?? 0;
                                     }), 0, ',', '.')),
                             ]),
                     ]),
-                    
-                Forms\Components\Section::make('Data dalam Rombongan')
-                    ->schema([
-                        $this->getItemsTable(),
+
+                Forms\Components\Tabs::make('Data')
+                    ->tabs([
+                        Forms\Components\Tabs\Tab::make('Data dalam Rombongan')
+                            ->schema([
+                                $this->getItemsTable(),
+                            ]),
+
+                        // ✅ TAB BARU: DATA TERSEDIA
+                        Forms\Components\Tabs\Tab::make('Data Tersedia')
+                            ->schema([
+                                Forms\Components\Livewire::make(\App\Filament\Opd\Resources\Rombongan\Pages\AvailableItemsTable::class, [
+                                    'rombonganId' => $this->record->id,
+                                ]),
+                            ]),
                     ])
-                    ->collapsible(false),
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -83,30 +94,30 @@ class EditRombongan extends EditRecord
     private function getEditFormSchema($record): array
     {
         $item = $record->item;
-        
+
         if (!$item) {
             return [
                 Forms\Components\Placeholder::make('error')
                     ->content('Data tidak ditemukan atau telah dihapus.'),
             ];
         }
-        
+
         // ✅ FORM UMUM UNTUK SEMUA JENIS DATA
         $commonFields = [
             Forms\Components\TextInput::make('nama_pekerjaan')
                 ->label('Nama Pekerjaan')
                 ->required()
                 ->default($item->nama_pekerjaan ?? ''),
-                
+
             Forms\Components\TextInput::make('kode_rup')
                 ->label('Kode RUP')
                 ->default($item->kode_rup ?? ''),
-                
+
             Forms\Components\TextInput::make('pagu_rup')
                 ->label('Pagu RUP')
                 ->numeric()
                 ->default($item->pagu_rup ?? 0),
-                
+
             Forms\Components\TextInput::make('nilai_kontrak')
                 ->label('Nilai Kontrak')
                 ->numeric()
@@ -115,7 +126,7 @@ class EditRombongan extends EditRecord
         ];
 
         // ✅ FIELD TAMBAHAN BERDASARKAN JENIS DATA
-        $additionalFields = match($record->item_type) {
+        $additionalFields = match ($record->item_type) {
             'App\Models\Pl' => $this->getPlFields($item),
             'App\Models\Tender' => $this->getTenderFields($item),
             'App\Models\Epurcasing' => $this->getEpurcasingFields($item),
@@ -174,18 +185,18 @@ class EditRombongan extends EditRecord
                                 ->required()
                                 ->options([
                                     'PDN' => 'PDN',
-                                    'TKDN' => 'TKDN', 
+                                    'TKDN' => 'TKDN',
                                     'IMPOR' => 'IMPOR',
                                 ])
                                 ->inline()
                                 ->default($item->pdn_tkdn_impor ?? ''),
-                                
+
                             Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
                                 ->label('Nilai PDN/TKDN/IMPOR')
                                 ->numeric()
                                 ->prefix('Rp')
                                 ->default($item->nilai_pdn_tkdn_impor ?? 0),
-                                
+
                             Forms\Components\TextInput::make('persentase_tkdn')
                                 ->label('Persentase TKDN')
                                 ->numeric()
@@ -206,7 +217,7 @@ class EditRombongan extends EditRecord
                                 ])
                                 ->inline()
                                 ->default($item->umk_non_umk ?? ''),
-                                
+
                             Forms\Components\TextInput::make('nilai_umk')
                                 ->label('Nilai UMK')
                                 ->numeric()
@@ -291,18 +302,18 @@ class EditRombongan extends EditRecord
                                 ->required()
                                 ->options([
                                     'PDN' => 'PDN',
-                                    'TKDN' => 'TKDN', 
+                                    'TKDN' => 'TKDN',
                                     'IMPOR' => 'IMPOR',
                                 ])
                                 ->inline()
                                 ->default($item->pdn_tkdn_impor ?? ''),
-                                
+
                             Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
                                 ->label('Nilai PDN/TKDN/IMPOR')
                                 ->numeric()
                                 ->prefix('Rp')
                                 ->default($item->nilai_pdn_tkdn_impor ?? 0),
-                                
+
                             Forms\Components\TextInput::make('persentase_tkdn')
                                 ->label('Persentase TKDN')
                                 ->numeric()
@@ -323,7 +334,7 @@ class EditRombongan extends EditRecord
                                 ])
                                 ->inline()
                                 ->default($item->umk_non_umk ?? ''),
-                                
+
                             Forms\Components\TextInput::make('nilai_umk')
                                 ->label('Nilai UMK')
                                 ->numeric()
@@ -408,18 +419,18 @@ class EditRombongan extends EditRecord
                                 ->required()
                                 ->options([
                                     'PDN' => 'PDN',
-                                    'TKDN' => 'TKDN', 
+                                    'TKDN' => 'TKDN',
                                     'IMPOR' => 'IMPOR',
                                 ])
                                 ->inline()
                                 ->default($item->pdn_tkdn_impor ?? ''),
-                                
+
                             Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
                                 ->label('Nilai PDN/TKDN/IMPOR')
                                 ->numeric()
                                 ->prefix('Rp')
                                 ->default($item->nilai_pdn_tkdn_impor ?? 0),
-                                
+
                             Forms\Components\TextInput::make('persentase_tkdn')
                                 ->label('Persentase TKDN')
                                 ->numeric()
@@ -440,7 +451,7 @@ class EditRombongan extends EditRecord
                                 ])
                                 ->inline()
                                 ->default($item->umk_non_umk ?? ''),
-                                
+
                             Forms\Components\TextInput::make('nilai_umk')
                                 ->label('Nilai UMK')
                                 ->numeric()
@@ -599,31 +610,31 @@ class EditRombongan extends EditRecord
     private function getViewFormSchema($record): array
     {
         $item = $record->item;
-        
+
         if (!$item) {
             return [
                 Forms\Components\Placeholder::make('error')
                     ->content('Data tidak ditemukan atau telah dihapus.'),
             ];
         }
-        
+
         return [
             Forms\Components\Placeholder::make('jenis')
                 ->label('Jenis Data')
                 ->content($this->getTypeLabel($record->item_type)),
-                
+
             Forms\Components\Placeholder::make('nama_pekerjaan')
                 ->label('Nama Pekerjaan')
                 ->content($item->nama_pekerjaan ?? '-'),
-                
+
             Forms\Components\Placeholder::make('kode_rup')
                 ->label('Kode RUP')
                 ->content($item->kode_rup ?? '-'),
-                
+
             Forms\Components\Placeholder::make('pagu_rup')
                 ->label('Pagu RUP')
                 ->content($item->pagu_rup ? 'Rp ' . number_format($item->pagu_rup, 0, ',', '.') : '-'),
-                
+
             Forms\Components\Placeholder::make('nilai_kontrak')
                 ->label('Nilai Kontrak')
                 ->content($item->nilai_kontrak ? 'Rp ' . number_format($item->nilai_kontrak, 0, ',', '.') : '-'),
@@ -634,10 +645,10 @@ class EditRombongan extends EditRecord
     private function updateItemData($record, array $data)
     {
         $item = $record->item;
-        
+
         if ($item) {
             // ✅ UPDATE BERDASARKAN JENIS DATA
-            switch($record->item_type) {
+            switch ($record->item_type) {
                 case 'App\Models\Pl':
                     $this->updatePlData($item, $data);
                     break;
@@ -665,7 +676,7 @@ class EditRombongan extends EditRecord
                         'nilai_kontrak' => $data['nilai_kontrak'],
                     ]);
             }
-            
+
             \Filament\Notifications\Notification::make()
                 ->title('Data berhasil diperbarui!')
                 ->success()
@@ -775,7 +786,7 @@ class EditRombongan extends EditRecord
 
     private function getTypeLabel($type): string
     {
-        return match($type) {
+        return match ($type) {
             'App\Models\Pl' => 'PL',
             'App\Models\Tender' => 'Tender',
             'App\Models\Epurcasing' => 'E-Purchasing',
@@ -788,7 +799,7 @@ class EditRombongan extends EditRecord
 
     private function getTypeColor($type): string
     {
-        return match($type) {
+        return match ($type) {
             'App\Models\Pl' => 'success',
             'App\Models\Tender' => 'primary',
             'App\Models\Epurcasing' => 'info',
@@ -799,12 +810,27 @@ class EditRombongan extends EditRecord
         };
     }
 
+    protected function getListeners(): array
+    {
+        return [
+            'refreshRombonganItems' => 'refreshTables',
+            'refreshAvailableItems' => 'refreshTables',
+        ];
+    }
+
+    public function refreshTables(): void
+    {
+        // This will refresh the entire form including both tables
+        $this->fillForm();
+    }
+
     private function getItemUrl($record): ?string
     {
         $item = $record->item;
-        if (!$item) return null;
+        if (!$item)
+            return null;
 
-        return match($record->item_type) {
+        return match ($record->item_type) {
             'App\Models\Pl' => \App\Filament\Opd\Resources\Pls\PlResource::getUrl('view', ['record' => $item->id]),
             'App\Models\Tender' => \App\Filament\Opd\Resources\TenderResource::getUrl('view', ['record' => $item->id]),
             'App\Models\Epurcasing' => \App\Filament\Opd\Resources\EpurcasingResource::getUrl('view', ['record' => $item->id]),

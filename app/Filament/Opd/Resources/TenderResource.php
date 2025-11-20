@@ -50,7 +50,7 @@ class TenderResource extends Resource
                             ->label('Kode RUP')
                             ->required()
                             ->numeric()
-                            ->integer(), 
+                            ->integer(),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
@@ -103,13 +103,13 @@ class TenderResource extends Resource
                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                 $pdnTkdnImpor = $get('pdn_tkdn_impor');
                                 $umkNonUmk = $get('umk_non_umk');
-                                
+
                                 if ($pdnTkdnImpor === 'IMPOR') {
                                     $set('nilai_pdn_tkdn_impor', 0);
                                 } elseif ($pdnTkdnImpor) {
                                     $set('nilai_pdn_tkdn_impor', $state);
                                 }
-                                
+
                                 if ($umkNonUmk === 'Non UMK') {
                                     $set('nilai_umk', 0);
                                 } elseif ($umkNonUmk) {
@@ -127,7 +127,7 @@ class TenderResource extends Resource
                                             ->required()
                                             ->options([
                                                 'PDN' => 'PDN',
-                                                'TKDN' => 'TKDN', 
+                                                'TKDN' => 'TKDN',
                                                 'IMPOR' => 'IMPOR',
                                             ])
                                             ->live()
@@ -157,7 +157,8 @@ class TenderResource extends Resource
                                             ->disabled()
                                             ->dehydrated()
                                             ->prefix('Rp')
-                                            ->visible(fn (Forms\Get $get): bool => 
+                                            ->visible(
+                                                fn(Forms\Get $get): bool =>
                                                 in_array($get('pdn_tkdn_impor'), ['PDN', 'IMPOR'])
                                             ),
 
@@ -169,7 +170,7 @@ class TenderResource extends Resource
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
-                                                    ->required(fn (Forms\Get $get): bool => $get('pdn_tkdn_impor') === 'TKDN')
+                                                    ->required(fn(Forms\Get $get): bool => $get('pdn_tkdn_impor') === 'TKDN')
                                                     ->live(onBlur: true)
                                                     ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                         $nilaiKontrak = $get('nilai_kontrak');
@@ -177,9 +178,16 @@ class TenderResource extends Resource
                                                         $hasil = $nilaiKontrak * ($persentase / 100);
                                                         $set('nilai_pdn_tkdn_impor', $hasil);
                                                     }),
+                                                Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
+                                                    ->label('Nilai TKDN')
+                                                    ->numeric()
+                                                    ->prefix('Rp')
+                                                    ->readonly() // Biar tidak bisa diedit
+                                                    ->default(0),
                                             ])
                                             ->columns(2)
-                                            ->visible(fn (Forms\Get $get): bool => 
+                                            ->visible(
+                                                fn(Forms\Get $get): bool =>
                                                 $get('pdn_tkdn_impor') === 'TKDN'
                                             ),
                                     ])
@@ -236,13 +244,14 @@ class TenderResource extends Resource
 
                         Forms\Components\FileUpload::make('bast_document')
                             ->label('Upload BAST')
-                            ->required(fn (Forms\Get $get): bool => $get('serah_terima_pekerjaan') === 'BAST')
+                            ->required(fn(Forms\Get $get): bool => $get('serah_terima_pekerjaan') === 'BAST')
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
                             ->maxSize(5120)
                             ->directory('bast-documents')
                             ->downloadable()
                             ->openable()
-                            ->visible(fn (Forms\Get $get): bool => 
+                            ->visible(
+                                fn(Forms\Get $get): bool =>
                                 $get('serah_terima_pekerjaan') === 'BAST'
                             ),
 
@@ -284,12 +293,12 @@ class TenderResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('nilai_kontrak')
                     ->label('Nilai Kontrak')
-                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
+                    ->formatStateUsing(fn($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                
+
                 // ✅ ACTION TAMBAH KE ROMBONGAN - SAMA SEPERTI PL
                 Tables\Actions\Action::make('add_to_rombongan')
                     ->label('Tambahkan ke Rombongan')
@@ -304,11 +313,11 @@ class TenderResource extends Resource
                     ])
                     ->action(function (Tender $record, array $data) {
                         $rombonganId = $data['rombongan_id'];
-                        
+
                         // Gunakan method addItem dari Model Rombongan
                         $rombongan = Rombongan::find($rombonganId);
                         $result = $rombongan->addItem('App\Models\Tender', $record->id);
-                        
+
                         if ($result) {
                             \Filament\Notifications\Notification::make()
                                 ->title('Berhasil ditambahkan ke rombongan')
@@ -324,7 +333,7 @@ class TenderResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Tambahkan ke Rombongan')
                     ->modalSubmitActionLabel('Tambahkan'),
-                    
+
                 Tables\Actions\DeleteAction::make(),
             ])
             ->filters([
@@ -341,7 +350,7 @@ class TenderResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                    
+
                     // ✅ BULK ACTION: TAMBAH KE ROMBONGAN - SAMA SEPERTI PL
                     Tables\Actions\BulkAction::make('add_to_rombongan_bulk')
                         ->label('Tambahkan ke Rombongan')
@@ -358,14 +367,14 @@ class TenderResource extends Resource
                             $rombonganId = $data['rombongan_id'];
                             $rombongan = Rombongan::find($rombonganId);
                             $addedCount = 0;
-                            
+
                             foreach ($records as $record) {
                                 $result = $rombongan->addItem('App\Models\Tender', $record->id);
                                 if ($result) {
                                     $addedCount++;
                                 }
                             }
-                            
+
                             \Filament\Notifications\Notification::make()
                                 ->title("{$addedCount} data berhasil ditambahkan ke rombongan")
                                 ->success()

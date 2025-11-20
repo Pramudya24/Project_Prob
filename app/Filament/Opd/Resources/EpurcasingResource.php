@@ -182,6 +182,13 @@ class EpurcasingResource extends Resource
                                                         $hasil = $nilaiKontrak * ($persentase / 100);
                                                         $set('nilai_pdn_tkdn_impor', $hasil);
                                                     }),
+                                                // Hasil otomatis (READONLY)
+                                                Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
+                                                    ->label('Nilai TKDN')
+                                                    ->numeric()
+                                                    ->prefix('Rp')
+                                                    ->readonly() // Biar tidak bisa diedit
+                                                    ->default(0),
                                             ])
                                             ->columns(2)
                                             ->visible(

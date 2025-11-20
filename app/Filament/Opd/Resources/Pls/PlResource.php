@@ -18,7 +18,7 @@ class PlResource extends Resource
     protected static ?string $model = Pl::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    
+
     protected static ?string $navigationLabel = 'PL';
 
     protected static ?string $navigationGroup = 'Form';
@@ -27,7 +27,7 @@ class PlResource extends Resource
     {
         return 'Data PL';
     }
-    
+
     protected static ?string $pluralModelLabel = 'Data PL';
 
     public static function form(Form $form): Form
@@ -52,9 +52,9 @@ class PlResource extends Resource
 
                         Forms\Components\TextInput::make('kode_rup')
                             ->label('Kode RUP')
-    ->required()
-    ->numeric() // ✅ HANYA ANGKA
-    ->integer(), 
+                            ->required()
+                            ->numeric() // ✅ HANYA ANGKA
+                            ->integer(),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
@@ -107,13 +107,13 @@ class PlResource extends Resource
                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                 $pdnTkdnImpor = $get('pdn_tkdn_impor');
                                 $umkNonUmk = $get('umk_non_umk');
-                                
+
                                 if ($pdnTkdnImpor === 'IMPOR') {
                                     $set('nilai_pdn_tkdn_impor', 0);
                                 } elseif ($pdnTkdnImpor) {
                                     $set('nilai_pdn_tkdn_impor', $state);
                                 }
-                                
+
                                 if ($umkNonUmk === 'Non UMK') {
                                     $set('nilai_umk', 0);
                                 } elseif ($umkNonUmk) {
@@ -131,7 +131,7 @@ class PlResource extends Resource
                                             ->required()
                                             ->options([
                                                 'PDN' => 'PDN',
-                                                'TKDN' => 'TKDN', 
+                                                'TKDN' => 'TKDN',
                                                 'IMPOR' => 'IMPOR',
                                             ])
                                             ->live()
@@ -161,7 +161,8 @@ class PlResource extends Resource
                                             ->disabled()
                                             ->dehydrated()
                                             ->prefix('Rp')
-                                            ->visible(fn (Forms\Get $get): bool => 
+                                            ->visible(
+                                                fn(Forms\Get $get): bool =>
                                                 in_array($get('pdn_tkdn_impor'), ['PDN', 'IMPOR'])
                                             ),
 
@@ -173,7 +174,7 @@ class PlResource extends Resource
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
-                                                    ->required(fn (Forms\Get $get): bool => $get('pdn_tkdn_impor') === 'TKDN')
+                                                    ->required(fn(Forms\Get $get): bool => $get('pdn_tkdn_impor') === 'TKDN')
                                                     ->live(onBlur: true)
                                                     ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                         $nilaiKontrak = $get('nilai_kontrak');
@@ -181,9 +182,16 @@ class PlResource extends Resource
                                                         $hasil = $nilaiKontrak * ($persentase / 100);
                                                         $set('nilai_pdn_tkdn_impor', $hasil);
                                                     }),
+                                                Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
+                                                    ->label('Nilai TKDN')
+                                                    ->numeric()
+                                                    ->prefix('Rp')
+                                                    ->readonly() // Biar tidak bisa diedit
+                                                    ->default(0),
                                             ])
                                             ->columns(2)
-                                            ->visible(fn (Forms\Get $get): bool => 
+                                            ->visible(
+                                                fn(Forms\Get $get): bool =>
                                                 $get('pdn_tkdn_impor') === 'TKDN'
                                             ),
                                     ])
@@ -240,13 +248,14 @@ class PlResource extends Resource
 
                         Forms\Components\FileUpload::make('bast_document')
                             ->label('Upload BAST')
-                            ->required(fn (Forms\Get $get): bool => $get('serah_terima_pekerjaan') === 'BAST')
+                            ->required(fn(Forms\Get $get): bool => $get('serah_terima_pekerjaan') === 'BAST')
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
                             ->maxSize(5120)
                             ->directory('bast-documents')
                             ->downloadable()
                             ->openable()
-                            ->visible(fn (Forms\Get $get): bool => 
+                            ->visible(
+                                fn(Forms\Get $get): bool =>
                                 $get('serah_terima_pekerjaan') === 'BAST'
                             ),
 
@@ -288,48 +297,48 @@ class PlResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('nilai_kontrak')
                     ->label('Nilai Kontrak')
-                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
+                    ->formatStateUsing(fn($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                
+
                 // ACTION TAMBAH KE ROMBONGAN
                 // GANTI action yang pakai syncWithoutDetaching dengan:
 
-Tables\Actions\Action::make('add_to_rombongan')
-    ->label('Tambahkan ke Rombongan')
-    ->icon('heroicon-o-plus-circle')
-    ->color('success')
-    ->form([
-        Forms\Components\Select::make('rombongan_id')
-            ->label('Pilih Rombongan')
-            ->options(\App\Models\Rombongan::all()->pluck('nama_rombongan', 'id'))
-            ->required()
-            ->searchable(),
-    ])
-    ->action(function (Pl $record, array $data) {
-        $rombonganId = $data['rombongan_id'];
-        
-        // Gunakan method addItem dari Model Rombongan
-        $rombongan = \App\Models\Rombongan::find($rombonganId);
-        $result = $rombongan->addItem('App\Models\Pl', $record->id);
-        
-        if ($result) {
-            \Filament\Notifications\Notification::make()
-                ->title('Berhasil ditambahkan ke rombongan')
-                ->success()
-                ->send();
-        } else {
-            \Filament\Notifications\Notification::make()
-                ->title('Data sudah ada dalam rombongan')
-                ->warning()
-                ->send();
-        }
-    })
-    ->requiresConfirmation()
-    ->modalHeading('Tambahkan ke Rombongan')
-    ->modalSubmitActionLabel('Tambahkan'),
+                Tables\Actions\Action::make('add_to_rombongan')
+                    ->label('Tambahkan ke Rombongan')
+                    ->icon('heroicon-o-plus-circle')
+                    ->color('success')
+                    ->form([
+                        Forms\Components\Select::make('rombongan_id')
+                            ->label('Pilih Rombongan')
+                            ->options(\App\Models\Rombongan::all()->pluck('nama_rombongan', 'id'))
+                            ->required()
+                            ->searchable(),
+                    ])
+                    ->action(function (Pl $record, array $data) {
+                        $rombonganId = $data['rombongan_id'];
+
+                        // Gunakan method addItem dari Model Rombongan
+                        $rombongan = \App\Models\Rombongan::find($rombonganId);
+                        $result = $rombongan->addItem('App\Models\Pl', $record->id);
+
+                        if ($result) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Berhasil ditambahkan ke rombongan')
+                                ->success()
+                                ->send();
+                        } else {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Data sudah ada dalam rombongan')
+                                ->warning()
+                                ->send();
+                        }
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('Tambahkan ke Rombongan')
+                    ->modalSubmitActionLabel('Tambahkan'),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('jenis_pengadaan')
@@ -347,43 +356,43 @@ Tables\Actions\Action::make('add_to_rombongan')
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-            Tables\Actions\BulkActionGroup::make([
-                Tables\Actions\DeleteBulkAction::make(),
-                
-                // ✅ Bulk Action: Kirim ke Rombongan
-                // Bulk action - PERBAIKI parameter $records
-            Tables\Actions\BulkAction::make('add_to_rombongan_bulk')
-                ->label('Tambahkan ke Rombongan')
-                ->icon('heroicon-o-plus-circle')
-                ->color('success')
-                ->form([
-                    Forms\Components\Select::make('rombongan_id')
-                        ->label('Pilih Rombongan')
-                        ->options(\App\Models\Rombongan::all()->pluck('nama_rombongan', 'id'))
-                        ->required()
-                        ->searchable(),
-                ])
-                ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data) { // ✅ TAMBAH TYPE HINT
-                    $rombonganId = $data['rombongan_id'];
-                    $rombongan = \App\Models\Rombongan::find($rombonganId);
-                    $addedCount = 0;
-                    
-                    foreach ($records as $record) {
-                        $result = $rombongan->addItem('App\Models\Pl', $record->id);
-                        if ($result) {
-                            $addedCount++;
-                        }
-                    }
-                    
-                    \Filament\Notifications\Notification::make()
-                        ->title("{$addedCount} data berhasil ditambahkan ke rombongan")
-                        ->success()
-                        ->send();
-                })
-                ->requiresConfirmation()
-                ->deselectRecordsAfterCompletion(),
-            ]),
-        ])
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+
+                    // ✅ Bulk Action: Kirim ke Rombongan
+                    // Bulk action - PERBAIKI parameter $records
+                    Tables\Actions\BulkAction::make('add_to_rombongan_bulk')
+                        ->label('Tambahkan ke Rombongan')
+                        ->icon('heroicon-o-plus-circle')
+                        ->color('success')
+                        ->form([
+                            Forms\Components\Select::make('rombongan_id')
+                                ->label('Pilih Rombongan')
+                                ->options(\App\Models\Rombongan::all()->pluck('nama_rombongan', 'id'))
+                                ->required()
+                                ->searchable(),
+                        ])
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data) { // ✅ TAMBAH TYPE HINT
+                            $rombonganId = $data['rombongan_id'];
+                            $rombongan = \App\Models\Rombongan::find($rombonganId);
+                            $addedCount = 0;
+
+                            foreach ($records as $record) {
+                                $result = $rombongan->addItem('App\Models\Pl', $record->id);
+                                if ($result) {
+                                    $addedCount++;
+                                }
+                            }
+
+                            \Filament\Notifications\Notification::make()
+                                ->title("{$addedCount} data berhasil ditambahkan ke rombongan")
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion(),
+                ]),
+            ])
             ->defaultSort('tanggal_dibuat', 'desc');
     }
 

@@ -2,13 +2,14 @@
 
 namespace App\Filament\Opd\Resources\Rombongan\Pages;
 
-use App\Filament\Opd\Resources\Rombongan\RombonganResource;
-use Filament\Resources\Pages\ViewRecord;
 use Filament\Infolists\Infolist;
+use Filament\Forms\Components\Card;
 use Filament\Infolists\Components\Tabs;
-use Filament\Infolists\Components\Tabs\Tab;
+use Filament\Resources\Pages\ViewRecord;
 use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\Tabs\Tab;
 use Filament\Infolists\Components\TextEntry;
+use App\Filament\Opd\Resources\Rombongan\RombonganResource;
 
 class ViewRombongan extends ViewRecord
 {
@@ -33,14 +34,14 @@ class ViewRombongan extends ViewRecord
                                     ->schema([
                                         TextEntry::make('nama_rombongan')
                                             ->label('Nama Rombongan'),
-                                            
+
                                         TextEntry::make('created_at')
                                             ->label('Dibuat Tanggal')
                                             ->dateTime('d/m/Y H:i'),
                                     ])
                                     ->columns(2),
                             ]),
-                            
+
                         Tab::make('Data dalam Rombongan')
                             ->icon('heroicon-o-document-text')
                             ->schema([
@@ -53,12 +54,12 @@ class ViewRombongan extends ViewRecord
                                             ->state($record->total_items)
                                             ->badge()
                                             ->color('success'),
-                                            
+
                                         TextEntry::make('total_nilai_info')
                                             ->label('Total Nilai')
                                             ->state('Rp ' . number_format($record->total_nilai, 0, ',', '.'))
                                             ->color('success'),
-                                            
+
                                         // Tampilkan data dalam bentuk simple list
                                         ...$this->getItemsSchema($itemsData),
                                     ]),
@@ -80,35 +81,66 @@ class ViewRombongan extends ViewRecord
         }
 
         $schema = [];
+
         foreach ($items as $index => $item) {
-            $schema[] = Section::make('Data ' . ($index + 1))
+            $schema[] = Section::make('Data ' . ($index + 1) . ' - ' . $item['nama_pekerjaan'])
                 ->schema([
                     TextEntry::make("item_{$index}_type")
                         ->label('Jenis')
-                        ->state($item['type'])
+                        ->state($this->getTypeLabel($item['type']))
                         ->badge()
-                        ->color(match($item['type']) {
-                            'PL' => 'success',
-                            'Tender' => 'primary',
-                            'E-Purchasing' => 'info',
-                            'Swakelola' => 'warning',
-                            'nontender' => 'warning',
-                            'PengadaanDarurat' => 'warning',
-                            default => 'secondary'
-                        }),
-                        
+                        ->color($this->getTypeColor($item['type'])),
+
                     TextEntry::make("item_{$index}_nama")
                         ->label('Nama Pekerjaan')
                         ->state($item['nama_pekerjaan']),
-                        
+
+                    TextEntry::make("item_{$index}_kode_rup")
+                        ->label('Kode RUP')
+                        ->state($item['kode_rup']),
+
+                    TextEntry::make("item_{$index}_pagu")
+                        ->label('Pagu RUP')
+                        ->state('Rp ' . number_format($item['pagu_rup'], 0, ',', '.')),
+
                     TextEntry::make("item_{$index}_nilai")
                         ->label('Nilai Kontrak')
-                        ->state('Rp ' . number_format($item['nilai_kontrak'], 0, ',', '.')),
+                        ->state($item['nilai_kontrak'] ? 'Rp ' . number_format($item['nilai_kontrak'], 0, ',', '.') : '-'),
+
+                    TextEntry::make("item_{$index}_jenis")
+                        ->label('Jenis Pengadaan')
+                        ->state($item['jenis_pengadaan'] ?? '-'),
                 ])
                 ->columns(3)
                 ->collapsible();
         }
 
         return $schema;
+    }
+
+    private function getTypeLabel(string $type): string
+    {
+        return match ($type) {
+            'pl' => 'PL',
+            'tender' => 'Tender',
+            'epurcasing' => 'E-Purchasing',
+            'swakelola' => 'Swakelola',
+            'nontender' => 'Non Tender',
+            'pengadaan_darurat' => 'Pengadaan Darurat',
+            default => $type
+        };
+    }
+
+    private function getTypeColor(string $type): string
+    {
+        return match ($type) {
+            'pl' => 'success',
+            'tender' => 'primary',
+            'epurcasing' => 'info',
+            'swakelola' => 'warning',
+            'nontender' => 'warning',
+            'pengadaan_darurat' => 'danger',
+            default => 'secondary'
+        };
     }
 }

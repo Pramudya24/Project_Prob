@@ -11,14 +11,14 @@ class Rombongan extends Model
     use HasFactory;
 
     protected $fillable = [
-    'nama_rombongan',
-    'keterangan', 
-    'status',
-];
+        'nama_rombongan',
+        'keterangan',
+        'status',
+    ];
 
-protected $casts = [
-    'status' => 'boolean',
-];
+    protected $casts = [
+        'status' => 'boolean',
+    ];
 
     // Relasi ke rombongan_items
     public function RombonganItems(): HasMany
@@ -33,10 +33,10 @@ protected $casts = [
     }
 
     // app/Models/Rombongan.php
-public function items()
-{
-    return $this->hasMany(RombonganItem::class);
-}
+    public function items()
+    {
+        return $this->hasMany(RombonganItem::class);
+    }
 
     // Convenience methods
     public function pls()
@@ -68,25 +68,24 @@ public function items()
     }
 
     // Method untuk menambahkan item ke rombongan
-    // Method untuk menambahkan item ke rombongan
-public function addItem($itemType, $itemId)
-{
-    // Cek apakah sudah ada
-    $existing = $this->RombonganItems()
-        ->where('item_type', $itemType)
-        ->where('item_id', $itemId)
-        ->exists();
+    public function addItem($itemType, $itemId)
+    {
+        // Cek apakah sudah ada
+        $existing = $this->RombonganItems()
+            ->where('item_type', $itemType)
+            ->where('item_id', $itemId)
+            ->exists();
 
-    if ($existing) {
-        return false; // Sudah ada
+        if ($existing) {
+            return false; // Sudah ada
+        }
+
+        // Tambahkan item
+        return $this->RombonganItems()->create([
+            'item_type' => $itemType,
+            'item_id' => $itemId,
+        ]);
     }
-
-    // Tambahkan item
-    return $this->RombonganItems()->create([
-        'item_type' => $itemType,
-        'item_id' => $itemId,
-    ]);
-}
 
     // Method untuk menghapus item dari rombongan
     public function removeItem($itemType, $itemId)
@@ -97,41 +96,43 @@ public function addItem($itemType, $itemId)
             ->delete();
     }
 
-    // Method untuk data items
-    // Method untuk data items - DENGAN DEBUG
-    // Method untuk data items - VERSI BERSIH
-        public function getRombonganItemsData()
-        {
-            $items = [];
-            $RombonganItems = $this->RombonganItems()->with('item')->get();
+    public function getRombonganItemsData()
+    {
+        $items = [];
+        $rombonganItems = $this->rombonganItems()->with('item')->get();
 
-            foreach ($RombonganItems as $RombonganItem) {
-                $item = $RombonganItem->item;
-                
-                if ($item) {
-                    $tanggal = $RombonganItem->created_at ?? now();
-                    
-                    $items[] = [
-                        'id' => (int) $RombonganItem->id,
-                        'item_id' => (int) $item->id,
-                        'type' => $this->getTypeLabel($RombonganItem->item_type),
-                        'nama_pekerjaan' => (string) ($item->nama_pekerjaan ?? '-'),
-                        'kode_rup' => (string) ($item->kode_rup ?? '-'),
-                        'pagu_rup' => (float) ($item->pagu_rup ?? 0),
-                        'nilai_kontrak' => (float) ($item->nilai_kontrak ?? 0),
-                        'tanggal' => (string) $tanggal->format('d/m/Y H:i'),
-                        'item_type' => (string) $RombonganItem->item_type,
-                    ];
-                }
+        foreach ($rombonganItems as $rombonganItem) {
+            $item = $rombonganItem->item;
+
+            if ($item) {
+                $items[] = [
+                    'type' => $this->getSimpleType($rombonganItem->item_type), // type sederhana
+                    'id' => $item->id,
+                    'nama_pekerjaan' => $item->nama_pekerjaan ?? '-',
+                    'kode_rup' => $item->kode_rup ?? '-',
+                    'pagu_rup' => $item->pagu_rup ?? 0,
+                    'nilai_kontrak' => $item->nilai_kontrak ?? 0,
+                    'jenis_pengadaan' => $item->jenis_pengadaan ?? '-',
+                ];
             }
-
-            // Sort by ID descending
-            usort($items, function($a, $b) {
-                return $b['id'] - $a['id'];
-            });
-
-            return $items;
         }
+
+        return $items;
+    }
+
+    // Tambahkan method helper ini:
+    private function getSimpleType($itemType): string
+    {
+        return match ($itemType) {
+            'App\Models\Pl' => 'pl',
+            'App\Models\Tender' => 'tender',
+            'App\Models\Epurcasing' => 'epurcasing',
+            'App\Models\Swakelola' => 'swakelola',
+            'App\Models\Nontender' => 'nontender',
+            'App\Models\PengadaanDarurat' => 'pengadaan_darurat',
+            default => 'unknown'
+        };
+    }
 
     // Helper method untuk total items
     public function getTotalItemsAttribute()
@@ -144,20 +145,19 @@ public function addItem($itemType, $itemId)
     {
         $total = 0;
         $RombonganItems = $this->RombonganItems()->with('item')->get();
-        
+
         foreach ($RombonganItems as $RombonganItem) {
             if ($RombonganItem->item && isset($RombonganItem->item->nilai_kontrak)) {
                 $total += $RombonganItem->item->nilai_kontrak;
             }
         }
-        
+
         return $total;
     }
 
-    // Helper untuk label type
     private function getTypeLabel($type): string
     {
-        return match($type) {
+        return match ($type) {
             'App\Models\Pl' => 'PL',
             'App\Models\Tender' => 'Tender',
             'App\Models\Epurcasing' => 'E-Purchasing',
@@ -167,4 +167,18 @@ public function addItem($itemType, $itemId)
             default => class_basename($type)
         };
     }
+
+    // Di Model Rombongan
+    public function getItemsWithData()
+    {
+        return $this->items->map(function ($item) {
+            return [
+                'type' => $item->pivot->item_type,
+                'id' => $item->pivot->item_id,
+                // Data lainnya akan di-fetch real-time di getItemsSchema
+            ];
+        })->toArray();
+    }
+
+    
 }
