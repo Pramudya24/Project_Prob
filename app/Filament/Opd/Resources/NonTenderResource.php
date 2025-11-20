@@ -26,7 +26,7 @@ class NonTenderResource extends Resource
     {
         return 'Data Non Tender';
     }
-    
+
     protected static ?string $pluralModelLabel = 'Data Non Tender';
 
     public static function form(Form $form): Form
@@ -53,7 +53,7 @@ class NonTenderResource extends Resource
                             ->label('Kode RUP')
                             ->required()
                             ->numeric()
-                            ->integer(), 
+                            ->integer(),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
@@ -82,152 +82,154 @@ class NonTenderResource extends Resource
                             ->required()
                             ->native(false),
 
-                Forms\Components\Section::make('Nilai Kontrak & Komponen')
-                    ->schema([
-                        Forms\Components\TextInput::make('nilai_kontrak')
-                            ->label('Nilai Kontrak')
-                            ->numeric()
-                            ->required()
-                            ->live(onBlur: true)
-                            ->prefix('Rp')
-                            ->placeholder('0')
-                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                $pdnTkdnImpor = $get('pdn_tkdn_impor');
-                                $umkNonUmk = $get('umk_non_umk');
-                                
-                                if ($pdnTkdnImpor === 'IMPOR') {
-                                    $set('nilai_pdn_tkdn_impor', 0);
-                                } elseif ($pdnTkdnImpor) {
-                                    $set('nilai_pdn_tkdn_impor', $state);
-                                }
-                                
-                                if ($umkNonUmk === 'Non UMK') {
-                                    $set('nilai_umk', 0);
-                                } elseif ($umkNonUmk) {
-                                    $set('nilai_umk', $state);
-                                }
-                            })
-                            ->columnSpanFull(),
-
-                        Forms\Components\Grid::make()
+                        Forms\Components\Section::make('Nilai Kontrak & Komponen')
                             ->schema([
-                                Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
-                                    ->schema([
-                                        Forms\Components\Radio::make('pdn_tkdn_impor')
-                                            ->options([
-                                                'PDN' => 'PDN',
-                                                'TKDN' => 'TKDN',
-                                                'IMPOR' => 'IMPOR',
-                                            ])
-                                            ->required()
-                                            ->live()
-                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                $nilaiKontrak = $get('nilai_kontrak');
-                                                if ($state === 'IMPOR') {
-                                                    $set('nilai_pdn_tkdn_impor', 0);
-                                                    $set('persentase_tkdn', null);
-                                                } elseif ($state === 'PDN') {
-                                                    $set('nilai_pdn_tkdn_impor', $nilaiKontrak);
-                                                    $set('persentase_tkdn', null);
-                                                } else {
-                                                    $set('nilai_pdn_tkdn_impor', 0);
-                                                    $set('persentase_tkdn', 0);
-                                                }
-                                            })
-                                            ->inline()
-                                            ->columnSpanFull(),
-                                    ])
-                                    ->columnSpan(1),
+                                Forms\Components\TextInput::make('nilai_kontrak')
+                                    ->label('Nilai Kontrak')
+                                    ->numeric()
+                                    ->required()
+                                    ->live(onBlur: true)
+                                    ->prefix('Rp')
+                                    ->placeholder('0')
+                                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                        $pdnTkdnImpor = $get('pdn_tkdn_impor');
+                                        $umkNonUmk = $get('umk_non_umk');
 
-                                Forms\Components\Group::make()
+                                        if ($pdnTkdnImpor === 'IMPOR') {
+                                            $set('nilai_pdn_tkdn_impor', 0);
+                                        } elseif ($pdnTkdnImpor) {
+                                            $set('nilai_pdn_tkdn_impor', $state);
+                                        }
+
+                                        if ($umkNonUmk === 'Non UMK') {
+                                            $set('nilai_umk', 0);
+                                        } elseif ($umkNonUmk) {
+                                            $set('nilai_umk', $state);
+                                        }
+                                    })
+                                    ->columnSpanFull(),
+
+                                Forms\Components\Grid::make()
                                     ->schema([
-                                        Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
-                                            ->label('Nilai PDN/TKDN/IMPOR')
+                                        Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
+                                            ->schema([
+                                                Forms\Components\Radio::make('pdn_tkdn_impor')
+                                                    ->options([
+                                                        'PDN' => 'PDN',
+                                                        'TKDN' => 'TKDN',
+                                                        'IMPOR' => 'IMPOR',
+                                                    ])
+                                                    ->required()
+                                                    ->live()
+                                                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                        $nilaiKontrak = $get('nilai_kontrak');
+                                                        if ($state === 'IMPOR') {
+                                                            $set('nilai_pdn_tkdn_impor', 0);
+                                                            $set('persentase_tkdn', null);
+                                                        } elseif ($state === 'PDN') {
+                                                            $set('nilai_pdn_tkdn_impor', $nilaiKontrak);
+                                                            $set('persentase_tkdn', null);
+                                                        } else {
+                                                            $set('nilai_pdn_tkdn_impor', 0);
+                                                            $set('persentase_tkdn', 0);
+                                                        }
+                                                    })
+                                                    ->inline()
+                                                    ->columnSpanFull(),
+                                            ])
+                                            ->columnSpan(1),
+
+                                        Forms\Components\Group::make()
+                                            ->schema([
+                                                Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
+                                                    ->label('Nilai PDN/TKDN/IMPOR')
+                                                    ->numeric()
+                                                    ->disabled()
+                                                    ->dehydrated()
+                                                    ->prefix('Rp')
+                                                    ->visible(
+                                                        fn(Forms\Get $get): bool =>
+                                                        in_array($get('pdn_tkdn_impor'), ['PDN', 'IMPOR'])
+                                                    ),
+
+                                                Forms\Components\Grid::make()
+                                                    ->schema([
+                                                        Forms\Components\TextInput::make('persentase_tkdn')
+                                                            ->label('Persentase TKDN')
+                                                            ->numeric()
+                                                            ->suffix('%')
+                                                            ->minValue(0)
+                                                            ->maxValue(100)
+                                                            ->required()
+                                                            ->live(onBlur: true)
+                                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                                $nilaiKontrak = $get('nilai_kontrak');
+                                                                $persentase = $state ?: 0;
+                                                                $hasil = $nilaiKontrak * ($persentase / 100);
+                                                                $set('nilai_pdn_tkdn_impor', $hasil);
+                                                            }),
+
+                                                        Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
+                                                            ->label('Hasil TKDN')
+                                                            ->numeric()
+                                                            ->disabled()
+                                                            ->dehydrated()
+                                                            ->prefix('Rp'),
+                                                    ])
+                                                    ->columns(2)
+                                                    ->visible(
+                                                        fn(Forms\Get $get): bool =>
+                                                        $get('pdn_tkdn_impor') === 'TKDN'
+                                                    ),
+                                            ])
+                                            ->columnSpan(1),
+                                    ])
+                                    ->columns(2),
+
+                                Forms\Components\Grid::make()
+                                    ->schema([
+                                        Forms\Components\Fieldset::make('UMK / Non UMK')
+                                            ->schema([
+                                                Forms\Components\Radio::make('umk_non_umk')
+                                                    ->options([
+                                                        'UMK' => 'UMK',
+                                                        'Non UMK' => 'Non UMK',
+                                                    ])
+                                                    ->required()
+                                                    ->live()
+                                                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                        $nilaiKontrak = $get('nilai_kontrak');
+                                                        if ($state === 'Non UMK') {
+                                                            $set('nilai_umk', 0);
+                                                        } elseif ($state) {
+                                                            $set('nilai_umk', $nilaiKontrak);
+                                                        }
+                                                    })
+                                                    ->inline()
+                                                    ->columnSpanFull(),
+                                            ])
+                                            ->columnSpan(1),
+
+                                        Forms\Components\TextInput::make('nilai_umk')
+                                            ->label('Nilai UMK')
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
                                             ->prefix('Rp')
-                                            ->visible(fn (Forms\Get $get): bool =>
-                                                in_array($get('pdn_tkdn_impor'), ['PDN', 'IMPOR'])
-                                            ),
-
-                                        Forms\Components\Grid::make()
-                                            ->schema([
-                                                Forms\Components\TextInput::make('persentase_tkdn')
-                                                    ->label('Persentase TKDN')
-                                                    ->numeric()
-                                                    ->suffix('%')
-                                                    ->minValue(0)
-                                                    ->maxValue(100)
-                                                    ->required()
-                                                    ->live(onBlur: true)
-                                                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                        $nilaiKontrak = $get('nilai_kontrak');
-                                                        $persentase = $state ?: 0;
-                                                        $hasil = $nilaiKontrak * ($persentase / 100);
-                                                        $set('nilai_pdn_tkdn_impor', $hasil);
-                                                    }),
-
-                                                Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
-                                                    ->label('Hasil TKDN')
-                                                    ->numeric()
-                                                    ->disabled()
-                                                    ->dehydrated()
-                                                    ->prefix('Rp'),
-                                            ])
-                                            ->columns(2)
-                                            ->visible(fn (Forms\Get $get): bool =>
-                                                $get('pdn_tkdn_impor') === 'TKDN'
-                                            ),
+                                            ->columnSpan(1),
                                     ])
-                                    ->columnSpan(1),
+                                    ->columns(2),
+                                Forms\Components\FileUpload::make('realisasi')
+                                    ->label('Realisasi')
+                                    ->required()
+                                    ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
+                                    ->maxSize(5120)
+                                    ->directory('realisasi')
+                                    ->downloadable()
+                                    ->openable()
+                                    ->helperText('Upload file JPG/PDF (Max: 5MB)'),
                             ])
                             ->columns(2),
-
-                        Forms\Components\Grid::make()
-                            ->schema([
-                                Forms\Components\Fieldset::make('UMK / Non UMK')
-                                    ->schema([
-                                        Forms\Components\Radio::make('umk_non_umk')
-                                            ->options([
-                                                'UMK' => 'UMK',
-                                                'Non UMK' => 'Non UMK',
-                                            ])
-                                            ->required()
-                                            ->live()
-                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                $nilaiKontrak = $get('nilai_kontrak');
-                                                if ($state === 'Non UMK') {
-                                                    $set('nilai_umk', 0);
-                                                } elseif ($state) {
-                                                    $set('nilai_umk', $nilaiKontrak);
-                                                }
-                                            })
-                                            ->inline()
-                                            ->columnSpanFull(),
-                                    ])
-                                    ->columnSpan(1),
-
-                                Forms\Components\TextInput::make('nilai_umk')
-                                    ->label('Nilai UMK')
-                                    ->numeric()
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->prefix('Rp')
-                                    ->columnSpan(1),
-                            ])
-                            ->columns(2),
-                            Forms\Components\FileUpload::make('realisasi')
-                            ->label('Realisasi')
-                            ->required()
-                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
-                            ->maxSize(5120)
-                            ->directory('realisasi')
-                            ->downloadable()
-                            ->openable()
-                            ->helperText('Upload file JPG/PDF (Max: 5MB)'),
-                    ])
-                    ->columns(2),
 
                     ]),
             ]);
@@ -255,12 +257,12 @@ class NonTenderResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('nilai_kontrak')
                     ->label('Nilai Kontrak')
-                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
+                    ->formatStateUsing(fn($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                
+
                 // ✅ ACTION TAMBAH KE ROMBONGAN - SAMA SEPERTI PL
                 Tables\Actions\Action::make('add_to_rombongan')
                     ->label('Tambahkan ke Rombongan')
@@ -275,11 +277,11 @@ class NonTenderResource extends Resource
                     ])
                     ->action(function (NonTender $record, array $data) {
                         $rombonganId = $data['rombongan_id'];
-                        
+
                         // Gunakan method addItem dari Model Rombongan
                         $rombongan = Rombongan::find($rombonganId);
                         $result = $rombongan->addItem('App\Models\NonTender', $record->id);
-                        
+
                         if ($result) {
                             \Filament\Notifications\Notification::make()
                                 ->title('Berhasil ditambahkan ke rombongan')
@@ -295,7 +297,7 @@ class NonTenderResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Tambahkan ke Rombongan')
                     ->modalSubmitActionLabel('Tambahkan'),
-                    
+
                 Tables\Actions\DeleteAction::make(),
             ])
             ->filters([
@@ -312,7 +314,7 @@ class NonTenderResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                    
+
                     // ✅ BULK ACTION: TAMBAH KE ROMBONGAN - SAMA SEPERTI PL
                     Tables\Actions\BulkAction::make('add_to_rombongan_bulk')
                         ->label('Tambahkan ke Rombongan')
@@ -329,14 +331,14 @@ class NonTenderResource extends Resource
                             $rombonganId = $data['rombongan_id'];
                             $rombongan = Rombongan::find($rombonganId);
                             $addedCount = 0;
-                            
+
                             foreach ($records as $record) {
                                 $result = $rombongan->addItem('App\Models\NonTender', $record->id);
                                 if ($result) {
                                     $addedCount++;
                                 }
                             }
-                            
+
                             \Filament\Notifications\Notification::make()
                                 ->title("{$addedCount} data berhasil ditambahkan ke rombongan")
                                 ->success()
