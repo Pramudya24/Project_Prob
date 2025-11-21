@@ -12,14 +12,9 @@ class Rombongan extends Model
 
     protected $fillable = [
         'nama_rombongan',
-        'keterangan',
-        'status',
     ];
 
-    protected $casts = [
-        'status' => 'boolean',
-    ];
-
+    
     // Relasi ke rombongan_items
     public function RombonganItems(): HasMany
     {
@@ -38,15 +33,18 @@ class Rombongan extends Model
         return $this->hasMany(RombonganItem::class);
     }
 
-    // Convenience methods
+    // Convenience methods - PERBAIKI CASE SENSITIVITY
     public function pls()
     {
         return $this->getItemsByType('App\Models\Pl');
     }
+    
     public function nontenders()
     {
-        return $this->getItemsByType('App\Models\nontender');
+        // PERBAIKI: 'App\Models\Nontender' bukan 'App\Models\nontender'
+        return $this->getItemsByType('App\Models\Nontender');
     }
+    
     public function pengadaan_darurats()
     {
         return $this->getItemsByType('App\Models\PengadaanDarurat');
@@ -120,7 +118,7 @@ class Rombongan extends Model
         return $items;
     }
 
-    // Tambahkan method helper ini:
+    // PERBAIKI method helper dengan case yang benar:
     private function getSimpleType($itemType): string
     {
         return match ($itemType) {
@@ -128,7 +126,7 @@ class Rombongan extends Model
             'App\Models\Tender' => 'tender',
             'App\Models\Epurcasing' => 'epurcasing',
             'App\Models\Swakelola' => 'swakelola',
-            'App\Models\Nontender' => 'nontender',
+            'App\Models\Nontender' => 'nontender', // PERBAIKI: 'Nontender' bukan 'nontender'
             'App\Models\PengadaanDarurat' => 'pengadaan_darurat',
             default => 'unknown'
         };
@@ -162,7 +160,7 @@ class Rombongan extends Model
             'App\Models\Tender' => 'Tender',
             'App\Models\Epurcasing' => 'E-Purchasing',
             'App\Models\Swakelola' => 'Swakelola',
-            'App\Models\nontender' => 'nontender',
+            'App\Models\Nontender' => 'Nontender', // PERBAIKI: 'Nontender' bukan 'nontender'
             'App\Models\PengadaanDarurat' => 'PengadaanDarurat',
             default => class_basename($type)
         };
@@ -179,6 +177,4 @@ class Rombongan extends Model
             ];
         })->toArray();
     }
-
-    
 }

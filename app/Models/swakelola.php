@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 
-class swakelola extends Model
+class Swakelola extends Model
 {
     use HasFactory, SoftDeletes;
 

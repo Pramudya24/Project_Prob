@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
-class epurcasing extends Model
+class Epurcasing extends Model
 {
     use HasFactory, SoftDeletes;
 

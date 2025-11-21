@@ -10,10 +10,9 @@ use App\Models\Epurcasing;
 use App\Models\Swakelola;
 use App\Models\Nontender;
 use App\Models\PengadaanDarurat;
-use Illuminate\Database\Eloquent\Builder;
+use App\Models\Rombongan;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class AvailableItemsTable extends BaseWidget
 {
@@ -23,78 +22,48 @@ class AvailableItemsTable extends BaseWidget
 
     protected int | string | array $columnSpan = 'full';
 
+    // Mapping type alias ke class name
+    protected array $typeMap = [
+        'pl' => Pl::class,
+        'tender' => Tender::class,
+        'epurcasing' => Epurcasing::class,
+        'swakelola' => Swakelola::class,
+        'nontender' => Nontender::class,
+        'pengadaan_darurat' => PengadaanDarurat::class,
+    ];
+
     public function table(Table $table): Table
     {
-        $rombongan = \App\Models\Rombongan::find($this->rombonganId);
-
-        if (!$rombongan) {
-            return $table
-                ->query(Pl::query()->whereRaw('1=0'))
-                ->columns($this->getTableColumns())
-                ->emptyStateHeading('Rombongan tidak ditemukan');
-        }
-
         return $table
             ->query(Pl::query()->whereRaw('1=0'))
             ->columns($this->getTableColumns())
-            ->actions([
-                Tables\Actions\Action::make('add_to_rombongan')
-                    ->label('+ Tambah ke Rombongan')
-                    ->icon('heroicon-o-plus')
-                    ->color('success')
-                    ->action(function (Model $record) use ($rombongan) {
-                        try {
-                            $result = $rombongan->addItem($record->item_type, $record->original_id);
-
-                            if ($result) {
-                                \Filament\Notifications\Notification::make()
-                                    ->title('Berhasil!')
-                                    ->body('Data berhasil ditambahkan ke rombongan')
-                                    ->success()
-                                    ->send();
-
-                                $this->dispatch('refreshRombonganItems');
-                                $this->dispatch('refreshAvailableItems');
-                            } else {
-                                \Filament\Notifications\Notification::make()
-                                    ->title('Peringatan')
-                                    ->body('Data sudah ada dalam rombongan')
-                                    ->warning()
-                                    ->send();
-                            }
-                        } catch (\Exception $e) {
-                            \Filament\Notifications\Notification::make()
-                                ->title('Error')
-                                ->body('Terjadi kesalahan: ' . $e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
-                    })
-                    ->requiresConfirmation()
-                    ->modalHeading('Tambahkan ke Rombongan')
-                    ->modalDescription(fn (Model $record) => "Tambahkan data \"{$record->nama_pekerjaan}\" ke rombongan?")
-                    ->modalSubmitActionLabel('Ya, Tambahkan'),
-            ])
             ->emptyStateHeading('Tidak ada data tersedia')
-            ->emptyStateDescription('Silakan tambahkan data terlebih dahulu di halaman masing-masing form.')
+            ->emptyStateDescription('Silakan tambahkan data terlebih dahulu.')
             ->emptyStateIcon('heroicon-o-document');
     }
 
-    /**
-     * SOLUSI: Gunakan model Pl sebagai base untuk semua data
-     */
-    public function getTableRecords(): Collection 
+    protected function loadRecords(): Collection
     {
-        $collection = new Collection();
-        $uniqueId = 1;
+        $rombongan = Rombongan::find($this->rombonganId);
+        
+        // Get existing items untuk exclude
+        $existingItems = [];
+        if ($rombongan) {
+            $existingItems = $rombongan->RombonganItems()
+                ->get()
+                ->map(fn($item) => $item->item_type . '_' . $item->item_id)
+                ->toArray();
+        }
+
+        $collection = collect();
 
         $models = [
-            ['class' => Pl::class, 'label' => 'PL', 'color' => 'success'],
-            ['class' => Tender::class, 'label' => 'Tender', 'color' => 'primary'],
-            ['class' => Epurcasing::class, 'label' => 'E-Purchasing', 'color' => 'info'],
-            ['class' => Swakelola::class, 'label' => 'Swakelola', 'color' => 'warning'],
-            ['class' => Nontender::class, 'label' => 'Non Tender', 'color' => 'danger'],
-            ['class' => PengadaanDarurat::class, 'label' => 'Pengadaan Darurat', 'color' => 'gray'],
+            ['class' => Pl::class, 'alias' => 'pl', 'label' => 'PL', 'color' => 'success'],
+            ['class' => Tender::class, 'alias' => 'tender', 'label' => 'Tender', 'color' => 'primary'],
+            ['class' => Epurcasing::class, 'alias' => 'epurcasing', 'label' => 'E-Purchasing', 'color' => 'info'],
+            ['class' => Swakelola::class, 'alias' => 'swakelola', 'label' => 'Swakelola', 'color' => 'warning'],
+            ['class' => Nontender::class, 'alias' => 'nontender', 'label' => 'Non Tender', 'color' => 'danger'],
+            ['class' => PengadaanDarurat::class, 'alias' => 'pengadaan_darurat', 'label' => 'Pengadaan Darurat', 'color' => 'gray'],
         ];
 
         foreach ($models as $config) {
@@ -106,22 +75,23 @@ class AvailableItemsTable extends BaseWidget
                 $items = $modelClass::all();
                 
                 foreach ($items as $item) {
-                    // Buat instance Pl sebagai base model
-                    $fakeModel = new Pl();
-                    
-                    // Set properties manual
-                    $fakeModel->id = $uniqueId++; // ID UNIK
-                    $fakeModel->original_id = $item->id; // ID asli untuk addItem
-                    $fakeModel->nama_pekerjaan = $item->nama_pekerjaan ?? '-';
-                    $fakeModel->kode_rup = $item->kode_rup ?? '-';
-                    $fakeModel->pagu_rup = $item->pagu_rup ?? 0;
-                    $fakeModel->nilai_kontrak = $item->nilai_kontrak ?? 0;
-                    $fakeModel->created_at = $item->created_at ?? now();
-                    $fakeModel->item_type = $modelClass;
-                    $fakeModel->item_label = $config['label'];
-                    $fakeModel->item_color = $config['color'];
-                    
-                    $collection->add($fakeModel);
+                    // Skip jika sudah ada di rombongan
+                    $itemKey = $modelClass . '_' . $item->id;
+                    if (in_array($itemKey, $existingItems)) {
+                        continue;
+                    }
+
+                    $collection->push([
+                        'original_id' => $item->id,
+                        'type_alias' => $config['alias'], // Gunakan alias, bukan full class
+                        'item_label' => $config['label'],
+                        'item_color' => $config['color'],
+                        'nama_pekerjaan' => $item->nama_pekerjaan ?? '-',
+                        'kode_rup' => $item->kode_rup ?? '-',
+                        'pagu_rup' => $item->pagu_rup ?? 0,
+                        'nilai_kontrak' => $item->nilai_kontrak ?? 0,
+                        'created_at' => $item->created_at ?? now(),
+                    ]);
                 }
 
             } catch (\Exception $e) {
@@ -132,48 +102,79 @@ class AvailableItemsTable extends BaseWidget
         return $collection;
     }
 
+    public function render(): \Illuminate\Contracts\View\View
+    {
+        return view('filament.widgets.available-items-table', [
+            'records' => $this->loadRecords(),
+            'rombonganId' => $this->rombonganId,
+        ]);
+    }
+
+    /**
+     * Action untuk tambah ke rombongan
+     */
+    public function addToRombongan(string $typeAlias, int $itemId): void
+    {
+        // Convert alias ke full class name
+        $itemType = $this->typeMap[$typeAlias] ?? null;
+
+        if (!$itemType) {
+            \Filament\Notifications\Notification::make()
+                ->title('Error')
+                ->body('Tipe item tidak valid: ' . $typeAlias)
+                ->danger()
+                ->send();
+            return;
+        }
+
+        $rombongan = Rombongan::find($this->rombonganId);
+
+        if (!$rombongan) {
+            \Filament\Notifications\Notification::make()
+                ->title('Error')
+                ->body('Rombongan tidak ditemukan')
+                ->danger()
+                ->send();
+            return;
+        }
+
+        try {
+            $result = $rombongan->addItem($itemType, $itemId);
+
+            if ($result) {
+                \Filament\Notifications\Notification::make()
+                    ->title('Berhasil!')
+                    ->body('Data berhasil ditambahkan ke rombongan')
+                    ->success()
+                    ->send();
+
+                $this->dispatch('refreshRombonganItems');
+            } else {
+                \Filament\Notifications\Notification::make()
+                    ->title('Peringatan')
+                    ->body('Data sudah ada dalam rombongan')
+                    ->warning()
+                    ->send();
+            }
+        } catch (\Exception $e) {
+            \Filament\Notifications\Notification::make()
+                ->title('Error')
+                ->body('Terjadi kesalahan: ' . $e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
     protected function getTableColumns(): array
     {
         return [
-            Tables\Columns\TextColumn::make('item_label')
-                ->label('Jenis Data')
-                ->badge()
-                ->color(fn ($record) => $this->getTypeColor($record->item_type)),
-
-            Tables\Columns\TextColumn::make('nama_pekerjaan')
-                ->label('Nama Pekerjaan')
-                ->searchable()
-                ->limit(50),
-
-            Tables\Columns\TextColumn::make('kode_rup')
-                ->label('Kode RUP')
-                ->searchable(),
-
-            Tables\Columns\TextColumn::make('pagu_rup')
-                ->label('Pagu RUP')
-                ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 0, ',', '.')),
-
-            Tables\Columns\TextColumn::make('nilai_kontrak')
-                ->label('Nilai Kontrak')
-                ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-'),
-
-            Tables\Columns\TextColumn::make('created_at')
-                ->label('Dibuat')
-                ->dateTime('d/m/Y H:i'),
+            Tables\Columns\TextColumn::make('item_label')->label('Jenis Data'),
+            Tables\Columns\TextColumn::make('nama_pekerjaan')->label('Nama Pekerjaan'),
+            Tables\Columns\TextColumn::make('kode_rup')->label('Kode RUP'),
+            Tables\Columns\TextColumn::make('pagu_rup')->label('Pagu RUP'),
+            Tables\Columns\TextColumn::make('nilai_kontrak')->label('Nilai Kontrak'),
+            Tables\Columns\TextColumn::make('created_at')->label('Dibuat'),
         ];
-    }
-
-    protected function getTypeColor(string $type): string
-    {
-        return match ($type) {
-            'App\Models\Pl' => 'success',
-            'App\Models\Tender' => 'primary',
-            'App\Models\Epurcasing' => 'info',
-            'App\Models\Swakelola' => 'warning',
-            'App\Models\Nontender' => 'danger',
-            'App\Models\PengadaanDarurat' => 'gray',
-            default => 'gray'
-        };
     }
 
     protected function getListeners(): array

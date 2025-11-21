@@ -97,8 +97,6 @@ class RombonganItemsTable extends BaseWidget
             ->emptyStateDescription('Tambahkan data pekerjaan dari tab "Data Tersedia".') // ✅ UPDATE DESCRIPTION
             ->emptyStateIcon('heroicon-o-document')
             ->emptyStateActions([
-                // ✅ HAPUS TOMBOL BROWSE YANG LAMA
-                // Biarkan kosong, karena sekarang ada tab "Data Tersedia"
             ])
             ->striped();
     }
@@ -113,12 +111,6 @@ class RombonganItemsTable extends BaseWidget
                     ->content('Data tidak ditemukan atau telah dihapus.'),
             ];
         }
-
-        // ✅ DEBUG: CEK JENIS DATA
-        \Log::info('=== EDIT FORM DEBUG ===');
-        \Log::info('Item Type:', ['type' => $record->item_type]);
-        \Log::info('Item Class:', ['class' => get_class($item)]);
-
         // ✅ FORM UMUM UNTUK SEMUA JENIS DATA
         $commonFields = [
             Forms\Components\TextInput::make('nama_pekerjaan')
@@ -152,13 +144,6 @@ class RombonganItemsTable extends BaseWidget
             'App\Models\nontender' => $this->getnontenderFields($item),
             default => []
         };
-
-        \Log::info('Field Counts:', [
-            'common' => count($commonFields),
-            'additional' => count($additionalFields),
-            'total' => count($commonFields) + count($additionalFields)
-        ]);
-        \Log::info('=== END DEBUG ===');
 
         return array_merge($commonFields, $additionalFields);
     }
