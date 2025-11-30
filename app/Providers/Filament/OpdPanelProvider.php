@@ -27,7 +27,7 @@ class OpdPanelProvider extends PanelProvider
         ->default()
         ->id('opd')
         ->path('opd')
-        ->brandName('SI VERA')
+        ->brandName('SIVERA')
         ->renderHook(
         'panels::global-search.after',
         fn (): string => Blade::render('

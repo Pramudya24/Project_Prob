@@ -21,6 +21,15 @@ class EpurcasingResource extends Resource
 
     protected static ?string $navigationLabel = 'Epurcasing';
 
+    protected static ?string $navigationTooltip = 'Form untuk keperluan elektronik purchasing';
+
+    public static function getNavigationTooltip(): ?string
+{
+    return 'Form untuk keperluan elektronik purchasing';
+}
+
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $navigationGroup = 'Form';
 
     public static function getModelLabel(): string

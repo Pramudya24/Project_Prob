@@ -20,6 +20,8 @@ class PengadaanDaruratResource extends Resource
 
     protected static ?string $navigationLabel = 'Pencatatan Pengadaan Darurat';
 
+    protected static ?int $navigationSort = 4;
+
     protected static ?string $navigationGroup = 'Form';
 
     public static function getModelLabel(): string
@@ -27,7 +29,7 @@ class PengadaanDaruratResource extends Resource
         return 'Data Pengadaan Darurat';
     }
     
-    protected static ?string $pluralModelLabel = 'Data Pengadaan Darurat';
+    protected static ?string $pluralModelLabel = 'Data Pencatatan Pengadaan Darurat';
 
     public static function form(Form $form): Form
     {

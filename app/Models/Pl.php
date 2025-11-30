@@ -31,9 +31,11 @@ class Pl extends Model
         'serah_terima_pekerjaan',
         'bast_document',
         'penilaian_kinerja',
+        'metode_pengadaan',
     ];
 
     protected $casts = [
+        'metode_pengadaan' => MetodePengadaan::class,
         'tanggal_pls' => 'date',
         'kode_rup' => 'integer',
         'pagu_rup' => 'integer',
@@ -68,6 +70,27 @@ protected static function getInisial($namaOpd)
     
     return $inisial;
 }
+
+protected function setMetodePengadaanAttribute($value)
+    {
+        if ($value === '' || $value === null) {
+            $this->attributes['metode_pengadaan'] = null;
+            return;
+        }
+
+        // Jika sudah Enum object, ambil value-nya
+        if ($value instanceof MetodePengadaan) {
+            $this->attributes['metode_pengadaan'] = $value->value;
+            return;
+        }
+
+        $this->attributes['metode_pengadaan'] = $value;
+    }
+
+    public function getMetodePengadaanLabelAttribute(): ?string
+    {
+        return $this->metode_pengadaan?->value ?? null;
+    }
 
 public function rombongans(): MorphToMany
 {

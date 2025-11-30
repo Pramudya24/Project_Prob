@@ -19,7 +19,9 @@ class PlResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationLabel = 'PL';
+    protected static ?string $navigationLabel = 'Non Tender';
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $navigationGroup = 'Form';
 
@@ -28,7 +30,7 @@ class PlResource extends Resource
         return 'Data PL';
     }
 
-    protected static ?string $pluralModelLabel = 'Data PL';
+    protected static ?string $pluralModelLabel = 'Data Non Tender';
 
     public static function form(Form $form): Form
     {
@@ -82,6 +84,16 @@ class PlResource extends Resource
                                 'Terintegrasi' => 'Terintegrasi',
                             ])
                             ->native(false),
+                        Forms\Components\Select::make('metode_pengadaan')
+                            ->label('Metode Pengadaan')
+                            ->options([
+                                'Dikecualikan' => 'Dikecualikan',
+                                'Pengadaan Langsung' => 'Pengadaan Langsung',
+                                'Penunjukan Langsung' => 'Penunjukan Langsung',
+                                'E-Penunjukan Langsung' => 'E-Penunjukan Langsung',
+                            ])
+                            ->native(false)
+                            ->required(),
 
                         Forms\Components\FileUpload::make('summary_report')
                             ->label('Summary Report')

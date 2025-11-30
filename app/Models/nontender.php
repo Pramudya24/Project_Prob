@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
@@ -27,9 +28,11 @@ class Nontender extends Model
         'umk_non_umk',
         'nilai_umk',
         'realisasi',
+        'metode_pengadaan',
     ];
 
     protected $casts = [
+        'metode_pengadaan' => MetodePengadaan::class,
         'pagu_rup' => 'integer',
     ];
 
@@ -59,6 +62,27 @@ protected static function getInisial($namaOpd)
     
     return $inisial;
 }
+
+protected function setMetodePengadaanAttribute($value)
+    {
+        if ($value === '' || $value === null) {
+            $this->attributes['metode_pengadaan'] = null;
+            return;
+        }
+
+        // Jika sudah Enum object, ambil value-nya
+        if ($value instanceof MetodePengadaan) {
+            $this->attributes['metode_pengadaan'] = $value->value;
+            return;
+        }
+
+        $this->attributes['metode_pengadaan'] = $value;
+    }
+
+    public function getMetodePengadaanLabelAttribute(): ?string
+    {
+        return $this->metode_pengadaan?->value ?? null;
+    }
 
 public function rombongans(): MorphToMany
 {

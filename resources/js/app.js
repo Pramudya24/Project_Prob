@@ -1,7 +1,29 @@
 import './bootstrap';
+import tippy from 'tippy.js';
+import 'tippy.js/dist/tippy.css';
+import './tooltip-sidebar'; 
 
-import Alpine from 'alpinejs';
+// Inisialisasi Tippy
+document.addEventListener('DOMContentLoaded', function() {
+    initTippy();
+});
 
-window.Alpine = Alpine;
+// Untuk Livewire
+document.addEventListener('livewire:navigated', function() {
+    initTippy();
+});
 
-Alpine.start();
+// Jika menggunakan Livewire v3
+Livewire.hook('morph.added', ({ el }) => {
+    initTippy();
+});
+
+function initTippy() {
+    tippy('[data-tippy-content]', {
+        placement: 'right',
+        arrow: true,
+        animation: 'fade',
+        theme: 'sivera',
+        delay: [200, 0],
+    });
+}

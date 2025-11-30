@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Models\Opd;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
@@ -117,6 +118,14 @@ class UserSeeder extends Seeder
 
         // ✅ Buat user OPD (tidak duplikat)
         foreach ($opdData as $no => $opd) {
+
+            // Simpan OPD ke tabel opds
+            Opd::firstOrCreate([
+                'name' => $opd['name'],
+                'code' => $opd['code'],
+            ]);
+
+            // Membuat user OPD
             $email = strtolower($opd['code']) . '@gmail.com';
             $password = Hash::make($opd['code'] . sprintf('%02d', $no));
 
@@ -124,10 +133,15 @@ class UserSeeder extends Seeder
                 ['email' => $email],
                 [
                     'name' => $opd['name'],
+                    'opd_code' => $opd['code'],  // SIMPAN CODE DI USER
                     'password' => $password,
                     'email_verified_at' => now(),
                 ]
             );
+
+            $user->update([
+                'opd_code' => $opd['code'],
+            ]);
 
             if (!$user->hasRole('opd')) {
                 $user->assignRole('opd');

@@ -148,7 +148,9 @@ class AvailableItemsTable extends BaseWidget
                     ->success()
                     ->send();
 
+                // Dispatch ke parent page (EditRombongan) untuk refresh semua
                 $this->dispatch('refreshRombonganItems');
+                $this->dispatch('refreshAvailableItems');
             } else {
                 \Filament\Notifications\Notification::make()
                     ->title('Peringatan')

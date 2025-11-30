@@ -19,6 +19,7 @@ class TenderResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationLabel = 'Tender';
     protected static ?string $pluralModelLabel = 'Data Tender';
+    protected static ?int $navigationSort = 6;
     protected static ?string $navigationGroup = 'Form';
 
     public static function getModelLabel(): string

@@ -17,6 +17,8 @@ class EditRombongan extends EditRecord
 {
     protected static string $resource = RombonganResource::class;
 
+    public $refreshKey = 0;
+
     protected function getHeaderActions(): array
     {
         return [
@@ -69,21 +71,44 @@ class EditRombongan extends EditRecord
                     ->tabs([
                         Forms\Components\Tabs\Tab::make('Data dalam Rombongan')
                             ->schema([
-                                $this->getItemsTable(),
+                                // ✅ PERBAIKAN: Tambah key yang reactive
+                                Forms\Components\Livewire::make(RombonganItemsTable::class, [
+                                    'rombonganId' => $this->record->id,
+                                ])
+                                    ->key('rombongan-items-' . $this->record->id . '-' . $this->refreshKey),
                             ]),
 
-                        // ✅ TAB BARU: DATA TERSEDIA
                         Forms\Components\Tabs\Tab::make('Data Tersedia')
                             ->schema([
+                                // ✅ PERBAIKAN: Tambah key yang reactive
                                 Forms\Components\Livewire::make(\App\Filament\Opd\Resources\Rombongan\Pages\AvailableItemsTable::class, [
                                     'rombonganId' => $this->record->id,
-                                ]),
+                                ])
+                                    ->key('available-items-' . $this->record->id . '-' . $this->refreshKey),
                             ]),
                     ])
                     ->columnSpanFull(),
             ]);
     }
 
+    // ✅ LISTENER untuk refresh widgets
+    protected function getListeners(): array
+    {
+        return [
+            'refreshRombonganItems' => 'handleRefresh',
+            'refreshAvailableItems' => 'handleRefresh',
+        ];
+    }
+
+    public function handleRefresh(): void
+    {
+        // Increment key untuk force re-render
+        $this->refreshKey++;
+        
+        // Reload record untuk update statistik
+        $this->record = $this->record->fresh();
+    }
+    
     protected function getItemsTable(): Forms\Components\Component
     {
         return Forms\Components\Livewire::make(RombonganItemsTable::class, [
@@ -808,14 +833,6 @@ class EditRombongan extends EditRecord
             'App\Models\PengadaanDarurat' => 'warning',
             default => 'gray'
         };
-    }
-
-    protected function getListeners(): array
-    {
-        return [
-            'refreshRombonganItems' => 'refreshTables',
-            'refreshAvailableItems' => 'refreshTables',
-        ];
     }
 
     public function refreshTables(): void

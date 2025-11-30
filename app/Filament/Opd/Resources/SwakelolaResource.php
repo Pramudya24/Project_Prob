@@ -18,6 +18,7 @@ class SwakelolaResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationLabel = 'Pencatatan Swakelola';
+    protected static ?int $navigationSort = 5;
     protected static ?string $navigationGroup = 'Form';
 
     public static function getModelLabel(): string
@@ -25,7 +26,7 @@ class SwakelolaResource extends Resource
         return 'Data Swakelola';
     }
 
-    protected static ?string $pluralModelLabel = 'Data Swakelola';
+    protected static ?string $pluralModelLabel = 'Data Pencatatan Swakelola';
 
     public static function form(Form $form): Form
     {

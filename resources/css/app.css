@@ -1,3 +1,25 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Custom Theme untuk SIVERA */
+.tippy-box[data-theme~='sivera'] {
+    background-color: #1f2937;
+    color: #ffffff;
+    border-radius: 6px;
+    font-size: 13px;
+    padding: 8px 14px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.tippy-box[data-theme~='sivera'][data-placement^='right'] > .tippy-arrow::before {
+    border-right-color: #1f2937;
+}
+
+.tippy-box[data-theme~='sivera'][data-placement^='left'] > .tippy-arrow::before {
+    border-left-color: #1f2937;
+}
+
+.tippy-box[data-theme~='sivera'][data-placement^='top'] > .tippy-arrow::before {
+    border-top-color: #1f2937;
+}
+
+.tippy-box[data-theme~='sivera'][data-placement^='bottom'] > .tippy-arrow::before {
+    border-bottom-color: #1f2937;
+}

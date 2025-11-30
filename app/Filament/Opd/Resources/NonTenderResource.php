@@ -20,6 +20,8 @@ class NonTenderResource extends Resource
 
     protected static ?string $navigationLabel = 'Pencatatan Non Tender';
 
+    protected static ?int $navigationSort = 3;
+
     protected static ?string $navigationGroup = 'Form';
 
     public static function getModelLabel(): string
@@ -27,7 +29,7 @@ class NonTenderResource extends Resource
         return 'Data Non Tender';
     }
 
-    protected static ?string $pluralModelLabel = 'Data Non Tender';
+    protected static ?string $pluralModelLabel = 'Data Pencatatan Non Tender';
 
     public static function form(Form $form): Form
     {
@@ -81,6 +83,16 @@ class NonTenderResource extends Resource
                             ])
                             ->required()
                             ->native(false),
+
+                        Forms\Components\Select::make('metode_pengadaan')
+                            ->label('Metode Pengadaan')
+                            ->options([
+                                'Dikecualikan' => 'Dikecualikan',
+                                'Pengadaan Langsung' => 'Pengadaan Langsung',
+                                'Penunjukan Langsung' => 'Penunjukan Langsung',
+                            ])
+                            ->native(false)
+                            ->required(),
 
                         Forms\Components\Section::make('Nilai Kontrak & Komponen')
                             ->schema([
