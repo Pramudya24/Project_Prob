@@ -50,195 +50,182 @@ class RombonganVerifikatorResource extends Resource
             Forms\Components\Section::make('Detail Item dalam Rombongan')
                 ->description('Verifikasi setiap field pada item yang dikirim')
                 ->schema([
-                    Forms\Components\Repeater::make('items_by_type')
+                    Forms\Components\Placeholder::make('items_table')
                         ->label('')
-                        ->schema([
-                            Forms\Components\Placeholder::make('type_header')
-                                ->label('')
-                                ->content(fn($state) => new HtmlString(
-                                    '<div class="font-bold text-lg text-primary-600 dark:text-primary-400">' . 
-                                    '📦 ' . ($state['type_label'] ?? 'Items') . 
-                                    ' <span class="text-sm text-gray-500">(' . 
-                                    count($state['items'] ?? []) . ' item)</span></div>'
-                                )),
+                        ->content(function ($record) {
+                            if (!$record) {
+                                return 'Tidak ada data';
+                            }
 
-                            Forms\Components\Repeater::make('items')
-                                ->schema([
-                                    Forms\Components\Grid::make(1)
-                                        ->schema([
-                                            Forms\Components\Placeholder::make('item_header')
-                                                ->label('')
-                                                ->content(function ($get) {
-                                                    $namaPekerjaan = $get('nama_pekerjaan') ?? 'Item';
-                                                    $progress = $get('progress') ?? ['verified' => 0, 'total' => 0, 'percentage' => 0];
-                                                    
-                                                    $progressColor = match(true) {
-                                                        $progress['percentage'] == 100 => 'bg-green-500',
-                                                        $progress['percentage'] >= 50 => 'bg-yellow-500',
-                                                        default => 'bg-red-500'
-                                                    };
-                                                    
-                                                    return new HtmlString('
-                                                        <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border">
-                                                            <div class="font-semibold text-base mb-2">' . $namaPekerjaan . '</div>
-                                                            <div class="flex justify-between items-center text-sm mb-1">
-                                                                <span>Progress Verifikasi</span>
-                                                                <span class="font-medium">' . $progress['verified'] . '/' . $progress['total'] . ' field (' . $progress['percentage'] . '%)</span>
-                                                            </div>
-                                                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                                                <div class="' . $progressColor . ' h-2 rounded-full transition-all" style="width: ' . $progress['percentage'] . '%"></div>
-                                                            </div>
-                                                        </div>
-                                                    ');
-                                                }),
+                            $grouped = $record->getGroupedItemsWithFields();
+                            
+                            if (empty($grouped)) {
+                                return 'Tidak ada item dalam rombongan ini';
+                            }
 
-                                            Forms\Components\Hidden::make('rombongan_item_id'),
-                                            Forms\Components\Hidden::make('item_id'),
-                                            Forms\Components\Hidden::make('nama_pekerjaan'),
-                                            Forms\Components\Hidden::make('progress'),
-                                            Forms\Components\Hidden::make('all_verified'),
-                                        ]),
+                            $html = '<div class="space-y-8">';
 
-                                    // Tabel Field Verifications
-                                    Forms\Components\Repeater::make('fields')
-                                        ->label('Detail Field')
-                                        ->schema([
-                                            Forms\Components\Grid::make(4)
-                                                ->schema([
-                                                    // Kolom 1: No (auto)
-                                                    Forms\Components\Placeholder::make('no')
-                                                        ->label('No')
-                                                        ->content(function ($get, $livewire) {
-                                                            // Get index dari repeater
-                                                            $statePath = $get('../../fields');
-                                                            return new HtmlString('<div class="font-medium">' . (array_search($get('field_name'), array_column($statePath ?? [], 'field_name')) + 1) . '</div>');
-                                                        }),
-
-                                                    // Kolom 2: Uraian (Field Label)
-                                                    Forms\Components\Placeholder::make('field_label')
-                                                        ->label('Uraian')
-                                                        ->content(fn($get) => new HtmlString(
-                                                            '<div class="font-medium">' . ($get('field_label') ?? '-') . '</div>'
-                                                        )),
-
-                                                    // Kolom 3: Keterangan (Field Value)
-                                                    Forms\Components\Placeholder::make('field_value')
-                                                        ->label('Keterangan')
-                                                        ->content(function ($get) {
-                                                            $value = $get('field_value');
-                                                            $fieldName = $get('field_name');
-                                                            
-                                                            // Format nilai
-                                                            if (in_array($fieldName, ['pagu_rup', 'nilai_kontrak', 'total_nilai']) && is_numeric($value)) {
-                                                                $value = 'Rp ' . number_format($value, 0, ',', '.');
-                                                            }
-                                                            
-                                                            if (str_contains($fieldName, 'tanggal') && $value && $value !== '-') {
-                                                                try {
-                                                                    $value = \Carbon\Carbon::parse($value)->format('d/m/Y');
-                                                                } catch (\Exception $e) {
-                                                                    // Keep original value
-                                                                }
-                                                            }
-                                                            
-                                                            return new HtmlString('<div class="text-sm">' . ($value ?? '-') . '</div>');
-                                                        }),
-
-                                                    // Kolom 4: Status Verifikasi (Checkbox + Badge)
-                                                    Forms\Components\Grid::make(1)
-                                                        ->schema([
-                                                            Forms\Components\Checkbox::make('is_verified')
-                                                                ->label('Verifikasi')
-                                                                ->inline()
-                                                                ->afterStateUpdated(function ($state, $get, $set) {
-                                                                    $verificationId = $get('verification_id');
-                                                                    $fieldName = $get('field_name');
-                                                                    $rombonganItemId = $get('../../../rombongan_item_id');
-
-                                                                    if ($rombonganItemId && $fieldName) {
-                                                                        $rombonganItem = RombonganItem::find($rombonganItemId);
-                                                                        
-                                                                        if ($rombonganItem) {
-                                                                            $verification = $rombonganItem->getOrCreateFieldVerification($fieldName);
-                                                                            
-                                                                            $verification->update([
-                                                                                'is_verified' => $state,
-                                                                                'verified_at' => $state ? now() : null,
-                                                                                'verified_by' => $state ? auth()->id() : null,
-                                                                            ]);
-
-                                                                            $set('verification_id', $verification->id);
-                                                                        }
-                                                                    }
-                                                                })
-                                                                ->reactive()
-                                                                ->live(),
-
-                                                            Forms\Components\Placeholder::make('status_badge')
-                                                                ->label('')
-                                                                ->content(function ($get) {
-                                                                    $isVerified = $get('is_verified');
-                                                                    
-                                                                    if ($isVerified) {
-                                                                        return new HtmlString('
-                                                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
-                                                                                ✓ Sudah
-                                                                            </span>
-                                                                        ');
-                                                                    } else {
-                                                                        return new HtmlString('
-                                                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">
-                                                                                ○ Belum
-                                                                            </span>
-                                                                        ');
-                                                                    }
-                                                                }),
-
-                                                            Forms\Components\Hidden::make('field_name'),
-                                                            Forms\Components\Hidden::make('verification_id'),
-                                                        ]),
-                                                ]),
-                                        ])
-                                        ->addable(false)
-                                        ->deletable(false)
-                                        ->reorderable(false)
-                                        ->defaultItems(0)
-                                        ->columns(1),
-                                ])
-                                ->collapsible()
-                                ->collapsed()
-                                ->itemLabel(fn (array $state): ?string => 
-                                    ($state['nama_pekerjaan'] ?? 'Item') . 
-                                    ' - ' . 
-                                    ($state['progress']['verified'] ?? 0) . '/' . 
-                                    ($state['progress']['total'] ?? 0) . ' field' .
-                                    ($state['all_verified'] ? ' ✓' : '')
-                                )
-                                ->addable(false)
-                                ->deletable(false)
-                                ->reorderable(false)
-                                ->defaultItems(0),
-                        ])
-                        ->collapsible()
-                        ->collapsed()
-                        ->addable(false)
-                        ->deletable(false)
-                        ->reorderable(false)
-                        ->defaultItems(0)
-                        ->afterStateHydrated(function ($state, $set, $record) {
-                            if ($record) {
-                                $grouped = $record->getGroupedItemsWithFields();
-                                $formatted = [];
+                            foreach ($grouped as $type => $data) {
+                                $html .= '<div class="border rounded-lg p-6 bg-white dark:bg-gray-800">';
                                 
-                                foreach ($grouped as $type => $data) {
-                                    $formatted[] = [
-                                        'type_label' => $data['label'],
-                                        'items' => $data['items'],
-                                    ];
+                                // Header jenis item
+                                $html .= '<h3 class="text-xl font-bold text-primary-600 dark:text-primary-400 mb-4">';
+                                $html .= '📦 ' . strtoupper($data['label']);
+                                $html .= '</h3>';
+
+                                // Loop setiap item
+                                foreach ($data['items'] as $item) {
+                                    $progress = $item['progress'];
+                                    $progressColor = match(true) {
+                                        $progress['percentage'] == 100 => 'bg-green-500',
+                                        $progress['percentage'] >= 50 => 'bg-yellow-500',
+                                        default => 'bg-red-500'
+                                    };
+
+                                    // Sub-header nama item
+                                    $html .= '<div class="mb-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">';
+                                    $html .= '<div class="flex justify-between items-center mb-2">';
+                                    $html .= '<h4 class="text-lg font-semibold">Item: ' . htmlspecialchars($item['nama_pekerjaan']) . '</h4>';
+                                    $html .= '<span class="text-sm font-medium">';
+                                    $html .= 'Progress: ' . $progress['verified'] . '/' . $progress['total'] . ' field (' . $progress['percentage'] . '%)';
+                                    $html .= '</span>';
+                                    $html .= '</div>';
+                                    
+                                    // Progress bar
+                                    $html .= '<div class="w-full bg-gray-200 rounded-full h-2">';
+                                    $html .= '<div class="' . $progressColor . ' h-2 rounded-full transition-all" style="width: ' . $progress['percentage'] . '%"></div>';
+                                    $html .= '</div>';
+                                    $html .= '</div>';
+
+                                    // Tabel field
+                                    $html .= '<div class="overflow-x-auto mb-6">';
+                                    $html .= '<table class="w-full border-collapse border border-gray-300 dark:border-gray-600">';
+                                    
+                                    // Table header
+                                    $html .= '<thead>';
+                                    $html .= '<tr class="bg-gray-100 dark:bg-gray-700">';
+                                    $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold w-16">No</th>';
+                                    $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold">Uraian</th>';
+                                    $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold">Keterangan</th>';
+                                    $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center font-semibold w-48">Verifikasi</th>';
+                                    $html .= '</tr>';
+                                    $html .= '</thead>';
+                                    
+                                    // Table body
+                                    $html .= '<tbody>';
+                                    
+                                    $no = 1;
+                                    foreach ($item['fields'] as $field) {
+                                        $isVerified = $field['is_verified'];
+                                        $fieldValue = $field['field_value'];
+                                        
+                                        // Format nilai
+                                        if (in_array($field['field_name'], ['pagu_rup', 'nilai_kontrak', 'total_nilai']) && is_numeric($fieldValue)) {
+                                            $fieldValue = 'Rp ' . number_format($fieldValue, 0, ',', '.');
+                                        }
+                                        
+                                        if (str_contains($field['field_name'], 'tanggal') && $fieldValue && $fieldValue !== '-') {
+                                            try {
+                                                $fieldValue = \Carbon\Carbon::parse($fieldValue)->format('d/m/Y');
+                                            } catch (\Exception $e) {
+                                                // Keep original
+                                            }
+                                        }
+                                        
+                                        $rowClass = $isVerified ? 'bg-green-50 dark:bg-green-900/20' : '';
+                                        
+                                        $html .= '<tr class="' . $rowClass . '">';
+                                        
+                                        // Kolom No
+                                        $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center">' . $no . '</td>';
+                                        
+                                        // Kolom Uraian
+                                        $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3 font-medium">';
+                                        $html .= htmlspecialchars($field['field_label']);
+                                        $html .= '</td>';
+                                        
+                                        // Kolom Keterangan
+                                        $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3">';
+                                        $html .= htmlspecialchars($fieldValue ?? '-');
+                                        $html .= '</td>';
+                                        
+                                        // Kolom Verifikasi
+                                        $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center">';
+                                        
+                                        $checkboxId = 'verify_' . $item['rombongan_item_id'] . '_' . $field['field_name'];
+                                        $checked = $isVerified ? 'checked' : '';
+                                        
+                                        $html .= '<div class="flex items-center justify-center gap-3">';
+                                        
+                                        // Checkbox
+                                        $html .= '<label class="flex items-center cursor-pointer">';
+                                        $html .= '<input type="checkbox" ';
+                                        $html .= 'id="' . $checkboxId . '" ';
+                                        $html .= 'class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" ';
+                                        $html .= $checked . ' ';
+                                        $html .= 'onchange="handleVerificationChange(' . $item['rombongan_item_id'] . ', \'' . $field['field_name'] . '\', this.checked)"';
+                                        $html .= '>';
+                                        $html .= '<span class="ml-2 text-sm">Verifikasi</span>';
+                                        $html .= '</label>';
+                                        
+                                        // Badge
+                                        if ($isVerified) {
+                                            $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">';
+                                            $html .= '✓ Sudah';
+                                            $html .= '</span>';
+                                        } else {
+                                            $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">';
+                                            $html .= '○ Belum';
+                                            $html .= '</span>';
+                                        }
+                                        
+                                        $html .= '</div>';
+                                        $html .= '</td>';
+                                        
+                                        $html .= '</tr>';
+                                        $no++;
+                                    }
+                                    
+                                    $html .= '</tbody>';
+                                    $html .= '</table>';
+                                    $html .= '</div>';
                                 }
                                 
-                                $set('items_by_type', $formatted);
+                                $html .= '</div>';
                             }
+
+                            $html .= '</div>';
+
+                            // JavaScript untuk handle checkbox
+                            $html .= '<script>
+                                function handleVerificationChange(rombonganItemId, fieldName, isChecked) {
+                                    fetch("/verifikator/rombongan-verifikators/verify-field", {
+                                        method: "POST",
+                                        headers: {
+                                            "Content-Type": "application/json",
+                                            "X-CSRF-TOKEN": document.querySelector("meta[name=\'csrf-token\']").content
+                                        },
+                                        body: JSON.stringify({
+                                            rombongan_item_id: rombonganItemId,
+                                            field_name: fieldName,
+                                            is_verified: isChecked
+                                        })
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.success) {
+                                            // Reload halaman untuk update progress
+                                            window.location.reload();
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error("Error:", error);
+                                        alert("Gagal menyimpan verifikasi");
+                                    });
+                                }
+                            </script>';
+
+                            return new HtmlString($html);
                         }),
                 ]),
 
@@ -300,10 +287,11 @@ class RombonganVerifikatorResource extends Resource
                     ->badge()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Dibuat')
+                Tables\Columns\TextColumn::make('tanggal_masuk_verifikator')
+                    ->label('Tanggal Masuk')
                     ->dateTime('d/m/Y H:i')
-                    ->sortable(),
+                    ->sortable()
+                    ->placeholder('-'),
 
                 Tables\Columns\TextColumn::make('status_verifikasi')
                     ->label('Status')
@@ -420,7 +408,7 @@ class RombonganVerifikatorResource extends Resource
                     }),
             ])
 
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('tanggal_masuk_verifikator', 'desc');
     }
 
     public static function getPages(): array

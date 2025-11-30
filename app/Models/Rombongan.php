@@ -20,10 +20,12 @@ class Rombongan extends Model
         'tanggal_verifikasi',
         'lolos_verif',
         'status_pengiriman',
+        'tanggal_masuk_verifikator',
     ];
 
     protected $casts = [
         'tanggal_verifikasi' => 'datetime',
+        'tanggal_masuk_verifikator' => 'datetime',
         'lolos_verif' => 'boolean',
     ];
 

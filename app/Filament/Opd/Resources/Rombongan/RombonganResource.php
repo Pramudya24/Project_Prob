@@ -40,7 +40,7 @@ class RombonganResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('total_nilai')
-                                    ->label('Total Nilai Kontrak'),
+                    ->label('Total Nilai Kontrak'),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat')
@@ -75,6 +75,7 @@ class RombonganResource extends Resource
 
                         $record->update([
                             'status_pengiriman' => 'Terkirim ke Verifikator',
+                            'tanggal_masuk_verifikator' => now(), // ← Tambah ini
                         ]);
 
                         Notification::make()

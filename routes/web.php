@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Models\RombonganItem;
+
 
 Route::get('/', function () {
     // Redirect ke login jika belum login
@@ -52,4 +54,30 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+Route::post('/verifikator/rombongan-verifikators/verify-field', function () {
+    $data = request()->validate([
+        'rombongan_item_id' => 'required|exists:rombongan_items,id',
+        'field_name' => 'required|string',
+        'is_verified' => 'required|boolean',
+    ]);
+
+    $rombonganItem = RombonganItem::find($data['rombongan_item_id']);
+
+    if (!$rombonganItem) {
+        return response()->json(['success' => false, 'message' => 'Item not found'], 404);
+    }
+
+    $verification = $rombonganItem->getOrCreateFieldVerification($data['field_name']);
+
+    $verification->update([
+        'is_verified' => $data['is_verified'],
+        'verified_at' => $data['is_verified'] ? now() : null,
+        'verified_by' => $data['is_verified'] ? auth()->id() : null,
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Verifikasi berhasil disimpan'
+    ]);
+})->middleware('auth')->name('verifikator.verify-field');
+require __DIR__ . '/auth.php';

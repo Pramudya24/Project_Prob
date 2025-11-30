@@ -11,6 +11,7 @@ return new class extends Migration
         // Tambah kolom metode_pengadaan ke semua tabel
         $tables = [
             'nontenders',
+            'pls',
         ];
 
         foreach ($tables as $table) {
@@ -24,6 +25,7 @@ return new class extends Migration
     {
         $tables = [
             'nontenders',
+            'pls',
         ];
 
         foreach ($tables as $table) {
