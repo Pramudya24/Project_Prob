@@ -272,7 +272,7 @@ class EpurcasingResource extends Resource
                         Forms\Components\Select::make('penilaian_kinerja')
                             ->label('Penilaian Kinerja')
                             ->required()
-                            ->default('no')
+                            ->default('-')
                             ->native(false)
                             ->disabled(), // Menonaktifkan field
                     ])
