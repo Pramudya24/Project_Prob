@@ -55,7 +55,7 @@ class PlResource extends Resource
                         Forms\Components\TextInput::make('kode_rup')
                             ->label('Kode RUP')
                             ->required()
-                            ->numeric() // ✅ HANYA ANGKA
+                            ->rule('numeric') // ✅ HANYA ANGKA
                             ->integer(),
 
                         Forms\Components\TextInput::make('pagu_rup')

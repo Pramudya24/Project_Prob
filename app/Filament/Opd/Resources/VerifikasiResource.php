@@ -1,30 +1,37 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Opd\Resources;
 
-use App\Filament\Resources\VerifikasiResource\Pages;
+use App\Filament\Opd\Resources\VerifikasiResource\Pages;
+use App\Filament\Opd\Resources\VerifikasiResource\RelationManagers;
 use App\Models\Verifikasi;
+use Filament\Forms;
+use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class VerifikasiResource extends Resource
 {
     protected static ?string $model = Verifikasi::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-check-circle';
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationLabel = 'Verifikasi';
-
-    protected static ?string $navigationGroup = null; // atau 'Form' kalau mau di grup Form
-
-    protected static ?int $navigationSort = 3;
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                //
+            ]);
+    }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                // Kolom tabel kamu
+                //
             ])
             ->filters([
                 //
@@ -39,13 +46,17 @@ class VerifikasiResource extends Resource
             ]);
     }
 
+    public static function getRelations(): array
+    {
+        return [
+            //
+        ];
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListVerifikasis::route('/'),
-            'progres' => Pages\DataProgres::route('/progres'),
-            'valid' => Pages\DataValid::route('/valid'),
-            'akhir' => Pages\DataAkhir::route('/akhir'),
             'create' => Pages\CreateVerifikasi::route('/create'),
             'edit' => Pages\EditVerifikasi::route('/{record}/edit'),
         ];

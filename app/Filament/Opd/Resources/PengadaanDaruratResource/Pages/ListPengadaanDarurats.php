@@ -10,6 +10,11 @@ class ListPengadaanDarurats extends ListRecords
 {
     protected static string $resource = PengadaanDaruratResource::class;
 
+    public function getSubheading(): ?string
+    {
+        return 'PETUNJUK! Ini adalah halaman untuk melihat dan mengelola Data Pencatatan Pengadaan Darurat.';
+    }
+
     protected function getHeaderActions(): array
     {
         return [

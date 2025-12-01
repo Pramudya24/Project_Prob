@@ -2,18 +2,14 @@
 
 namespace App\Filament\Opd\Resources\VerifikasiResource\Pages;
 
+use Filament\Resources\Pages\Page;
 use App\Filament\Opd\Resources\VerifikasiResource;
-use Filament\Actions;
-use Filament\Resources\Pages\ListRecords;
 
-class ListVerifikasis extends ListRecords
+class ListVerifikasis extends Page
 {
     protected static string $resource = VerifikasiResource::class;
 
-    protected function getHeaderActions(): array
-    {
-        return [
-            Actions\CreateAction::make(),
-        ];
-    }
+    protected static string $view = 'filament.opd.verifikasi.custom-buttons';
+
+    protected static ?string $title = 'Verifikasi';
 }

@@ -6,20 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
         Schema::create('verifikasi', function (Blueprint $table) {
             $table->id();
-            // Tambahkan kolom sesuai kebutuhan, contoh:
-            $table->string('nama');
-            $table->string('status')->default('pending');
-            $table->text('keterangan')->nullable();
-            // dst...
             $table->timestamps();
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('verifikasi');
     }

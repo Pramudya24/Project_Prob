@@ -10,6 +10,11 @@ class ListEpurcasings extends ListRecords
 {
     protected static string $resource = EpurcasingResource::class;
 
+    public function getSubheading(): ?string
+    {
+        return 'PETUNJUK! Ini adalah halaman untuk melihat dan mengelola Data Epurcasing.';
+    }
+
     protected function getHeaderActions(): array
     {
         return [

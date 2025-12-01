@@ -54,13 +54,13 @@ class NonTenderResource extends Resource
                         Forms\Components\TextInput::make('kode_rup')
                             ->label('Kode RUP')
                             ->required()
-                            ->numeric()
+                            ->rule('numeric')
                             ->integer(),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
                             ->required()
-                            ->numeric()
+                            ->rule('numeric')
                             ->prefix('Rp'),
 
                         Forms\Components\TextInput::make('kode_paket')
@@ -93,7 +93,8 @@ class NonTenderResource extends Resource
                             ])
                             ->native(false)
                             ->required(),
-
+                            ])
+                            ->columns(2),
                         Forms\Components\Section::make('Nilai Kontrak & Komponen')
                             ->schema([
                                 Forms\Components\TextInput::make('nilai_kontrak')
@@ -240,10 +241,10 @@ class NonTenderResource extends Resource
                                     ->downloadable()
                                     ->openable()
                                     ->helperText('Upload file JPG/PDF (Max: 5MB)'),
-                            ])
-                            ->columns(2),
-
-                    ]),
+                            
+                            
+                        ])
+                    ->columns(2),
             ]);
     }
 

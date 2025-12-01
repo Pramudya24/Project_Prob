@@ -10,6 +10,11 @@ class ListSwakelolas extends ListRecords
 {
     protected static string $resource = SwakelolaResource::class;
 
+    public function getSubheading(): ?string
+    {
+        return 'PETUNJUK! Ini adalah halaman untuk melihat dan mengelola Data Pencatatan Swakelola.';
+    }
+
     protected function getHeaderActions(): array
     {
         return [

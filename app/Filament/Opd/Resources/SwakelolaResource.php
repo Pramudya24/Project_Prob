@@ -51,13 +51,13 @@ class SwakelolaResource extends Resource
                         Forms\Components\TextInput::make('kode_rup')
                             ->label('Kode RUP')
                             ->required()
-                            ->numeric()
+                            ->rule('numeric')
                             ->integer(),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
                             ->required()
-                            ->numeric()
+                            ->rule('numeric')
                             ->prefix('Rp'),
 
                         Forms\Components\TextInput::make('kode_paket')

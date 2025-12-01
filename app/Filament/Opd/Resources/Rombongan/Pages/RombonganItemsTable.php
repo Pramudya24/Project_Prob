@@ -87,11 +87,22 @@ class RombonganItemsTable extends BaseWidget
                     ->color('danger')
                     ->action(function ($record) {
                         $record->delete();
+                        
+                        // ✅ Dispatch event untuk refresh kedua table
+                        $this->dispatch('refreshRombonganItems');
+                        $this->dispatch('refreshAvailableItems');
+                        
+                        // ✅ Notifikasi
+                        \Filament\Notifications\Notification::make()
+                            ->title('Data dikeluarkan')
+                            ->body('Data berhasil dikeluarkan dari rombongan')
+                            ->success()
+                            ->send();
                     })
                     ->requiresConfirmation()
                     ->modalHeading('Keluarkan dari Rombongan')
                     ->modalDescription('Apakah Anda yakin ingin mengeluarkan data ini dari rombongan?')
-                    ->modalSubmitActionLabel('Ya, Keluarkan'),
+                    ->modalSubmitActionLabel('Ya, Keluarkan'),
             ])
             ->emptyStateHeading('Belum ada data dalam rombongan')
             ->emptyStateDescription('Tambahkan data pekerjaan dari tab "Data Tersedia".') // ✅ UPDATE DESCRIPTION

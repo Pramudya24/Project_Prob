@@ -10,6 +10,11 @@ class ListTenders extends ListRecords
 {
     protected static string $resource = TenderResource::class;
 
+    public function getSubheading(): ?string
+    {
+        return 'PETUNJUK! Ini adalah halaman untuk melihat dan mengelola Data Tender.';
+    }
+
     protected function getHeaderActions(): array
     {
         return [

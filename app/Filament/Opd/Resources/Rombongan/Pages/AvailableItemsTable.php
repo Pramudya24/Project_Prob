@@ -44,16 +44,10 @@ class AvailableItemsTable extends BaseWidget
 
     protected function loadRecords(): Collection
     {
-        $rombongan = Rombongan::find($this->rombonganId);
-        
-        // Get existing items untuk exclude
-        $existingItems = [];
-        if ($rombongan) {
-            $existingItems = $rombongan->RombonganItems()
-                ->get()
-                ->map(fn($item) => $item->item_type . '_' . $item->item_id)
-                ->toArray();
-        }
+        // ✅ Ambil SEMUA item yang sudah ada di SEMUA rombongan
+        $existingItems = \App\Models\RombonganItem::all()
+            ->map(fn($item) => $item->item_type . '_' . $item->item_id)
+            ->toArray();
 
         $collection = collect();
 
@@ -75,7 +69,7 @@ class AvailableItemsTable extends BaseWidget
                 $items = $modelClass::all();
                 
                 foreach ($items as $item) {
-                    // Skip jika sudah ada di rombongan
+                    // ✅ Skip jika sudah ada di ROMBONGAN MANA PUN
                     $itemKey = $modelClass . '_' . $item->id;
                     if (in_array($itemKey, $existingItems)) {
                         continue;
@@ -83,7 +77,7 @@ class AvailableItemsTable extends BaseWidget
 
                     $collection->push([
                         'original_id' => $item->id,
-                        'type_alias' => $config['alias'], // Gunakan alias, bukan full class
+                        'type_alias' => $config['alias'],
                         'item_label' => $config['label'],
                         'item_color' => $config['color'],
                         'nama_pekerjaan' => $item->nama_pekerjaan ?? '-',

@@ -10,6 +10,11 @@ class ListPls extends ListRecords
 {
     protected static string $resource = PlResource::class;
 
+    public function getSubheading(): ?string
+    {
+        return 'PETUNJUK! Ini adalah halaman untuk melihat dan mengelola Data Non Tender.';
+    }
+
     protected function getHeaderActions(): array
     {
         return [

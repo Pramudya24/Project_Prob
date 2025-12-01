@@ -21,14 +21,9 @@ class EpurcasingResource extends Resource
 
     protected static ?string $navigationLabel = 'Epurcasing';
 
-    protected static ?string $navigationTooltip = 'Form untuk keperluan elektronik purchasing';
-
-    public static function getNavigationTooltip(): ?string
-{
-    return 'Form untuk keperluan elektronik purchasing';
-}
 
     protected static ?int $navigationSort = 1;
+
 
     protected static ?string $navigationGroup = 'Form';
 
@@ -62,13 +57,12 @@ class EpurcasingResource extends Resource
                         Forms\Components\TextInput::make('kode_rup')
                             ->label('Kode RUP')
                             ->required()
-                            ->numeric()
-                            ->integer(),
+                            ->rule('numeric'),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
                             ->required()
-                            ->numeric()
+                            ->rule('numeric')
                             ->prefix('Rp'),
 
                         Forms\Components\TextInput::make('kode_paket')
