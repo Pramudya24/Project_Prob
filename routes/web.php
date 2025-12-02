@@ -55,18 +55,91 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::post('/verifikator/rombongan-verifikators/save-field-note', 
-    [EditRombonganVerifikator::class, 'saveFieldNote']
-)->name('verifikator.save-field-note')->middleware(['auth']);
+Route::post('/verifikator/rombongan-verifikators/verify-field', function () {
+    $data = request()->validate([
+        'rombongan_item_id' => 'required|exists:rombongan_items,id',
+        'field_name' => 'required|string',
+        'is_verified' => 'required|boolean',
+    ]);
 
-Route::post('/verifikator/rombongan-verifikators/verify-field', 
-    [EditRombonganVerifikator::class, 'verifyField']
-)->name('verifikator.verify-field')->middleware(['auth']);
+    $rombonganItem = RombonganItem::find($data['rombongan_item_id']);
+    
+    if (!$rombonganItem) {
+        return response()->json(['success' => false, 'message' => 'Item not found'], 404);
+    }
 
-/**
- * Route untuk serve file dari storage/app/private
- * Format URL: /private-file/realisasi/nama-file.jpg
- */
+    $verification = $rombonganItem->getOrCreateFieldVerification($data['field_name']);
+    
+    $verification->update([
+        'is_verified' => $data['is_verified'],
+        'verified_at' => $data['is_verified'] ? now() : null,
+        'verified_by' => $data['is_verified'] ? auth()->id() : null,
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Verifikasi berhasil disimpan'
+    ]);
+})->middleware('auth')->name('verifikator.verify-field');
+
+// Route untuk save catatan per field
+Route::post('/verifikator/rombongan-verifikators/save-catatan', function () {
+    $data = request()->validate([
+        'rombongan_item_id' => 'required|exists:rombongan_items,id',
+        'field_name' => 'required|string',
+        'catatan' => 'nullable|string',
+    ]);
+
+    $rombonganItem = RombonganItem::find($data['rombongan_item_id']);
+    
+    if (!$rombonganItem) {
+        return response()->json(['success' => false, 'message' => 'Item not found'], 404);
+    }
+
+    $verification = $rombonganItem->getOrCreateFieldVerification($data['field_name']);
+    
+    $verification->update([
+        'keterangan' => $data['catatan'],
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Catatan berhasil disimpan'
+    ]);
+})->middleware('auth')->name('verifikator.save-catatan');
+
+// Route untuk verify all fields dalam 1 item
+Route::post('/verifikator/rombongan-verifikators/verify-all-fields', function () {
+    $data = request()->validate([
+        'rombongan_item_id' => 'required|exists:rombongan_items,id',
+    ]);
+
+    $rombonganItem = RombonganItem::find($data['rombongan_item_id']);
+    
+    if (!$rombonganItem) {
+        return response()->json(['success' => false, 'message' => 'Item not found'], 404);
+    }
+
+    // Get semua field yang perlu diverifikasi
+    $fields = $rombonganItem->getVerifiableFields();
+    
+    // Centang semua field
+    foreach ($fields as $fieldName) {
+        $verification = $rombonganItem->getOrCreateFieldVerification($fieldName);
+        
+        $verification->update([
+            'is_verified' => true,
+            'verified_at' => now(),
+            'verified_by' => auth()->id(),
+        ]);
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Semua field berhasil diverifikasi'
+    ]);
+})->middleware('auth')->name('verifikator.verify-all-fields');
+
 Route::get('/private-file/{path}', function ($path) {
     $filePath = storage_path('app/private/' . $path);
     

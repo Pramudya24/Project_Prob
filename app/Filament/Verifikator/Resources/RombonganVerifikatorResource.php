@@ -24,7 +24,6 @@ class RombonganVerifikatorResource extends Resource
     protected static ?string $navigationLabel = 'Verifikasi Rombongan';
     protected static ?string $modelLabel = 'Verifikasi Rombongan';
     protected static ?int $navigationSort = 2;
-    
 
     public static function form(Form $form): Form
     {
@@ -49,7 +48,7 @@ class RombonganVerifikatorResource extends Resource
                 ])->columns(3),
 
             Forms\Components\Section::make('Detail Item dalam Rombongan')
-                ->description('Verifikasi setiap field pada item yang dikirim. Tambahkan catatan untuk field yang bermasalah.')
+                ->description('Verifikasi setiap field pada item yang dikirim')
                 ->schema([
                     Forms\Components\Placeholder::make('items_table')
                         ->label('')
@@ -83,13 +82,25 @@ class RombonganVerifikatorResource extends Resource
                                         default => 'bg-red-500'
                                     };
 
-                                    // Sub-header nama item
+                                    // Sub-header nama item dengan button centang semua
                                     $html .= '<div class="mb-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">';
                                     $html .= '<div class="flex justify-between items-center mb-2">';
                                     $html .= '<h4 class="text-lg font-semibold">Item: ' . htmlspecialchars($item['nama_pekerjaan']) . '</h4>';
+                                    $html .= '<div class="flex items-center gap-3">';
                                     $html .= '<span class="text-sm font-medium">';
                                     $html .= 'Progress: ' . $progress['verified'] . '/' . $progress['total'] . ' field (' . $progress['percentage'] . '%)';
                                     $html .= '</span>';
+                                    
+                                    // Button Centang Semua
+                                    if ($progress['percentage'] < 100) {
+                                        $html .= '<button ';
+                                        $html .= 'onclick="verifyAllFields(' . $item['rombongan_item_id'] . ')" ';
+                                        $html .= 'class="px-3 py-1.5 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition">';
+                                        $html .= '✓ Centang Semua';
+                                        $html .= '</button>';
+                                    }
+                                    
+                                    $html .= '</div>';
                                     $html .= '</div>';
 
                                     // Progress bar
@@ -105,11 +116,11 @@ class RombonganVerifikatorResource extends Resource
                                     // Table header
                                     $html .= '<thead>';
                                     $html .= '<tr class="bg-gray-100 dark:bg-gray-700">';
-                                    $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold w-12">No</th>';
+                                    $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold w-16">No</th>';
                                     $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold">Uraian</th>';
                                     $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold">Keterangan</th>';
-                                    $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center font-semibold w-32">Status</th>';
-                                    $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold w-80">Catatan Verifikasi</th>';
+                                    $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center font-semibold w-48">Verifikasi</th>';
+                                    $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold w-64">Catatan</th>';
                                     $html .= '</tr>';
                                     $html .= '</thead>';
 
@@ -121,7 +132,7 @@ class RombonganVerifikatorResource extends Resource
                                         $isVerified = $field['is_verified'];
                                         $fieldValue = $field['field_value'];
                                         $fieldName = $field['field_name'];
-                                        $verificationNote = $field['verification_note'] ?? '';
+                                        $keterangan = $field['keterangan'] ?? '';
 
                                         // Format nilai
                                         if (in_array($fieldName, ['pagu_rup', 'nilai_kontrak', 'total_nilai']) && is_numeric($fieldValue)) {
@@ -141,7 +152,6 @@ class RombonganVerifikatorResource extends Resource
                                         $imageUrl = null;
                                         
                                         if ($fieldValue && $fieldValue !== '-') {
-                                            // Cek dari nama field
                                             $imageKeywords = ['foto', 'gambar', 'image', 'photo', 'picture'];
                                             foreach ($imageKeywords as $keyword) {
                                                 if (str_contains(strtolower($fieldName), $keyword)) {
@@ -150,7 +160,6 @@ class RombonganVerifikatorResource extends Resource
                                                 }
                                             }
                                             
-                                            // Atau cek dari extension
                                             if (!$isImageField) {
                                                 $imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
                                                 foreach ($imageExtensions as $ext) {
@@ -182,7 +191,6 @@ class RombonganVerifikatorResource extends Resource
                                         $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3">';
                                         
                                         if ($isImageField && $imageUrl) {
-                                            // Tampilkan preview gambar + link
                                             $html .= '<div class="flex items-center gap-3">';
                                             $html .= '<img src="' . $imageUrl . '" ';
                                             $html .= 'alt="Preview" ';
@@ -201,66 +209,50 @@ class RombonganVerifikatorResource extends Resource
                                         
                                         $html .= '</td>';
 
-                                        // Kolom Status Verifikasi
+                                        // Kolom Verifikasi
                                         $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center">';
 
                                         $checkboxId = 'verify_' . $item['rombongan_item_id'] . '_' . $fieldName;
                                         $checked = $isVerified ? 'checked' : '';
 
-                                        $html .= '<div class="flex flex-col items-center gap-2">';
+                                        $html .= '<div class="flex items-center justify-center gap-3">';
 
                                         // Checkbox
                                         $html .= '<label class="flex items-center cursor-pointer">';
                                         $html .= '<input type="checkbox" ';
                                         $html .= 'id="' . $checkboxId . '" ';
-                                        $html .= 'class="rounded border-gray-300 text-primary-600 focus:ring-primary-500 w-5 h-5" ';
+                                        $html .= 'class="field-checkbox rounded border-gray-300 text-primary-600 focus:ring-primary-500" ';
+                                        $html .= 'data-rombongan-item-id="' . $item['rombongan_item_id'] . '" ';
+                                        $html .= 'data-field-name="' . $fieldName . '" ';
                                         $html .= $checked . ' ';
                                         $html .= 'onchange="handleVerificationChange(' . $item['rombongan_item_id'] . ', \'' . $fieldName . '\', this.checked)"';
                                         $html .= '>';
+                                        $html .= '<span class="ml-2 text-sm">Verifikasi</span>';
                                         $html .= '</label>';
 
                                         // Badge
                                         if ($isVerified) {
-                                            $html .= '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">';
-                                            $html .= '✓ OK';
+                                            $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">';
+                                            $html .= '✓ Sudah';
                                             $html .= '</span>';
                                         } else {
-                                            $html .= '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">';
-                                            $html .= '✗ Belum';
+                                            $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">';
+                                            $html .= '○ Belum';
                                             $html .= '</span>';
                                         }
 
                                         $html .= '</div>';
                                         $html .= '</td>';
 
-                                        // Kolom Catatan Verifikasi
+                                        // Kolom Catatan
                                         $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3">';
-                                        
-                                        $textareaId = 'note_' . $item['rombongan_item_id'] . '_' . $fieldName;
-                                        $escapedNote = htmlspecialchars($verificationNote);
-                                        
-                                        $html .= '<div class="flex flex-col gap-2">';
                                         $html .= '<textarea ';
-                                        $html .= 'id="' . $textareaId . '" ';
-                                        $html .= 'rows="3" ';
-                                        $html .= 'class="w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm focus:ring-primary-500 focus:border-primary-500" ';
-                                        $html .= 'placeholder="Jelaskan masalah atau perbaikan yang diperlukan untuk field ini..."';
-                                        $html .= '>' . $escapedNote . '</textarea>';
-                                        
-                                        $html .= '<button type="button" ';
-                                        $html .= 'onclick="saveVerificationNote(' . $item['rombongan_item_id'] . ', \'' . $fieldName . '\')" ';
-                                        $html .= 'class="self-end px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500">';
-                                        $html .= 'Simpan Catatan';
-                                        $html .= '</button>';
-                                        
-                                        // Tampilkan existing note jika ada
-                                        if (!empty($verificationNote)) {
-                                            $html .= '<div class="text-xs text-gray-600 dark:text-gray-400 italic">';
-                                            $html .= '💬 Catatan tersimpan: ' . htmlspecialchars($verificationNote);
-                                            $html .= '</div>';
-                                        }
-                                        
-                                        $html .= '</div>';
+                                        $html .= 'id="catatan_' . $item['rombongan_item_id'] . '_' . $fieldName . '" ';
+                                        $html .= 'class="w-full rounded border-gray-300 text-sm dark:bg-gray-800 dark:border-gray-600" ';
+                                        $html .= 'rows="2" ';
+                                        $html .= 'placeholder="Catatan untuk field ini..." ';
+                                        $html .= 'onblur="saveCatatan(' . $item['rombongan_item_id'] . ', \'' . $fieldName . '\', this.value)"';
+                                        $html .= '>' . htmlspecialchars($keterangan) . '</textarea>';
                                         $html .= '</td>';
 
                                         $html .= '</tr>';
@@ -286,7 +278,7 @@ class RombonganVerifikatorResource extends Resource
                                 </div>
                             </div>';
 
-                            // JavaScript untuk handle checkbox, catatan, dan modal
+                            // JavaScript
                             $html .= '<script>
                                 function handleVerificationChange(rombonganItemId, fieldName, isChecked) {
                                     fetch("/verifikator/rombongan-verifikators/verify-field", {
@@ -313,11 +305,8 @@ class RombonganVerifikatorResource extends Resource
                                     });
                                 }
                                 
-                                function saveVerificationNote(rombonganItemId, fieldName) {
-                                    const textareaId = "note_" + rombonganItemId + "_" + fieldName;
-                                    const note = document.getElementById(textareaId).value;
-                                    
-                                    fetch("/verifikator/rombongan-verifikators/save-field-note", {
+                                function saveCatatan(rombonganItemId, fieldName, catatan) {
+                                    fetch("/verifikator/rombongan-verifikators/save-catatan", {
                                         method: "POST",
                                         headers: {
                                             "Content-Type": "application/json",
@@ -326,32 +315,44 @@ class RombonganVerifikatorResource extends Resource
                                         body: JSON.stringify({
                                             rombongan_item_id: rombonganItemId,
                                             field_name: fieldName,
-                                            verification_note: note
+                                            catatan: catatan
                                         })
                                     })
                                     .then(response => response.json())
                                     .then(data => {
                                         if (data.success) {
-                                            // Show success feedback
-                                            const button = event.target;
-                                            const originalText = button.textContent;
-                                            button.textContent = "✓ Tersimpan!";
-                                            button.classList.add("bg-green-600");
-                                            button.classList.remove("bg-primary-600");
-                                            
-                                            setTimeout(() => {
-                                                button.textContent = originalText;
-                                                button.classList.remove("bg-green-600");
-                                                button.classList.add("bg-primary-600");
-                                                window.location.reload();
-                                            }, 1500);
-                                        } else {
-                                            alert("Gagal menyimpan catatan");
+                                            console.log("Catatan tersimpan");
                                         }
                                     })
                                     .catch(error => {
                                         console.error("Error:", error);
-                                        alert("Gagal menyimpan catatan");
+                                    });
+                                }
+                                
+                                function verifyAllFields(rombonganItemId) {
+                                    if (!confirm("Centang semua field untuk item ini?")) {
+                                        return;
+                                    }
+                                    
+                                    fetch("/verifikator/rombongan-verifikators/verify-all-fields", {
+                                        method: "POST",
+                                        headers: {
+                                            "Content-Type": "application/json",
+                                            "X-CSRF-TOKEN": document.querySelector("meta[name=\'csrf-token\']").content
+                                        },
+                                        body: JSON.stringify({
+                                            rombongan_item_id: rombonganItemId
+                                        })
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.success) {
+                                            window.location.reload();
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error("Error:", error);
+                                        alert("Gagal centang semua field");
                                     });
                                 }
                                 
@@ -366,7 +367,6 @@ class RombonganVerifikatorResource extends Resource
                                     document.body.style.overflow = "auto";
                                 }
                                 
-                                // Close modal dengan ESC key
                                 document.addEventListener("keydown", function(e) {
                                     if (e.key === "Escape") {
                                         closeImageModal();
@@ -400,6 +400,15 @@ class RombonganVerifikatorResource extends Resource
                     ->sortable()
                     ->placeholder('-'),
 
+                Tables\Columns\TextColumn::make('status_verifikasi')
+                    ->label('Status')
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'Belum' => 'warning',
+                        'Sudah' => 'success',
+                        default => 'gray',
+                    }),
+
                 Tables\Columns\TextColumn::make('verification_progress')
                     ->label('Progress')
                     ->getStateUsing(function ($record) {
@@ -412,17 +421,8 @@ class RombonganVerifikatorResource extends Resource
                         $record->getVerificationProgress()['percentage'] === 100 ? 'success' : 'warning'
                     ),
 
-                Tables\Columns\TextColumn::make('unverified_count')
-                    ->label('Belum Diverifikasi')
-                    ->getStateUsing(function ($record) {
-                        $progress = $record->getVerificationProgress();
-                        return $progress['total'] - $progress['verified'];
-                    })
-                    ->badge()
-                    ->color(fn($state) => $state > 0 ? 'danger' : 'success'),
-
                 Tables\Columns\TextColumn::make('status_pengiriman')
-                    ->label('Status')
+                    ->label('Status Pengiriman')
                     ->badge()
                     ->color(fn($state) => match ($state) {
                         'Belum Dikirim' => 'gray',
@@ -432,31 +432,6 @@ class RombonganVerifikatorResource extends Resource
                         default => 'gray',
                     }),
             ])
-
-            ->filters([
-                Tables\Filters\SelectFilter::make('nama_opd')
-                    ->label('OPD')
-                    ->options(
-                        Opd::orderBy('code')
-                            ->pluck('code', 'code')
-                    )
-                    ->searchable()
-                    ->query(function (Builder $query, array $data) {
-                        return $data['value'] 
-                            ? $query->where('nama_opd', $data['value'])
-                            : $query;
-                    }),
-
-                Tables\Filters\SelectFilter::make('status_pengiriman')
-                    ->options([
-                        'Belum Dikirim' => 'Belum Dikirim',
-                        'Terkirim ke Verifikator' => 'Terkirim ke Verifikator',
-                        'Revisi' => 'Revisi',
-                        'Dikirim ke SPM' => 'Dikirim ke SPM',
-                    ]),
-            ])
-            ->filtersLayout(Tables\Enums\FiltersLayout::AboveContent)
-            ->persistFiltersInSession()
 
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -469,12 +444,13 @@ class RombonganVerifikatorResource extends Resource
                     ->color('success')
                     ->visible(
                         fn($record) =>
-                        $record->checkAutoValidation()
+                        $record->status_verifikasi === 'Sudah'
+                            && $record->checkAutoValidation()
                             && $record->status_pengiriman !== 'Dikirim ke SPM'
                     )
                     ->requiresConfirmation()
                     ->modalHeading('Kirim Rombongan ke SPM')
-                    ->modalDescription('Semua field sudah diverifikasi. Rombongan akan dikirim ke SPM. Apakah Anda yakin?')
+                    ->modalDescription('Rombongan ini sudah lolos verifikasi dan akan dikirim ke SPM. Apakah Anda yakin?')
                     ->modalSubmitActionLabel('Ya, Kirim ke SPM')
                     ->action(function ($record) {
                         $record->update([
@@ -490,25 +466,27 @@ class RombonganVerifikatorResource extends Resource
                     }),
 
                 Tables\Actions\Action::make('kirim_kembali')
-                    ->label('Kirim Kembali ke OPD')
+                    ->label('Kirim Kembali')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('warning')
                     ->visible(
                         fn($record) =>
-                        !$record->checkAutoValidation()
-                            && $record->status_pengiriman !== 'Dikirim ke SPM'
+                        $record->status_verifikasi === 'Sudah'
+                            && !$record->checkAutoValidation()
                     )
                     ->requiresConfirmation()
                     ->modalHeading('Kirim Kembali ke OPD untuk Revisi')
-                    ->modalDescription(fn($record) => 'Ada ' . ($record->getVerificationProgress()['total'] - $record->getVerificationProgress()['verified']) . ' field yang belum diverifikasi. Rombongan ini akan dikembalikan ke OPD untuk diperbaiki sesuai catatan verifikasi.')
+                    ->modalDescription('Rombongan ini akan dikembalikan ke OPD untuk diperbaiki.')
                     ->action(function ($record) {
                         $record->update([
+                            'status_verifikasi' => 'Belum',
                             'status_pengiriman' => 'Revisi',
+                            'keterangan_verifikasi' => ($record->keterangan_verifikasi ?? '') .
+                                "\n\n[Dikembalikan untuk revisi pada " . now()->format('d/m/Y H:i') . "]",
                         ]);
 
                         Notification::make()
                             ->title('Rombongan dikembalikan ke OPD')
-                            ->body('OPD akan melihat catatan verifikasi pada setiap field yang bermasalah.')
                             ->success()
                             ->send();
                     }),

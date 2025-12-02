@@ -21,6 +21,7 @@ class ListRombonganVerifikators extends ListRecords
     {
         parent::mount();
 
+        // Load filter dari session
         $this->opdSelected = session('filter_opd_verifikator', '');
     }
 
@@ -29,28 +30,23 @@ class ListRombonganVerifikators extends ListRecords
     {
         $this->opdSelected = $opd;
 
+        // Simpan ke session supaya persist setelah save
         session(['filter_opd_verifikator' => $opd]);
 
+        $this->resetTable();
+    }
+
+    // Update opdSelected langsung dari dropdown
+    public function updatedOpdSelected($value): void
+    {
+        session(['filter_opd_verifikator' => $value]);
         $this->resetTable();
     }
 
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('pilih_opd')
-                ->label('Pilih OPD')
-                ->icon('heroicon-o-building-office')
-                ->form([
-                    Forms\Components\Select::make('opd')
-                        ->label('Pilih OPD')
-                        ->options(Opd::pluck('code', 'code'))
-                        ->searchable()
-                        ->required(),
-                ])
-                ->modalHeading('Pilih OPD')
-                ->action(function (array $data): void {
-                    $this->dispatch('opd-selected', opd: $data['opd']);
-                }),
+            // Header action tidak perlu lagi, pakai dropdown di header custom
         ];
     }
 
@@ -58,10 +54,9 @@ class ListRombonganVerifikators extends ListRecords
     {
         return view('filament.verifikator.rombongan.header-dropdown', [
             'opdSelected' => $this->opdSelected,
-            'opds' => \App\Models\Opd::pluck('code', 'code'),
+            'opds' => Opd::orderBy('code')->pluck('code', 'code'),
         ]);
     }
-
 
     protected function getTableQuery(): ?Builder
     {
