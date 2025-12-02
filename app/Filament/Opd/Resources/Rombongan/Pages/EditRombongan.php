@@ -858,8 +858,23 @@ class EditRombongan extends EditRecord
         };
     }
 
+    protected function getFormActions(): array
+    {
+        return [
+            Actions\Action::make('back')
+                ->label('Kembali')
+                ->color('gray')
+                ->url($this->getResource()::getUrl('index')),
+        ];
+    }
+
     protected function getRedirectUrl(): string
     {
-        return $this->getResource()::getUrl('edit', ['record' => $this->record->id]);
+        return $this->getResource()::getUrl('index');
     }
+    protected function getSavedNotificationTitle(): ?string
+    {
+        return 'Rombongan berhasil diperbarui';
+    }
+    
 }

@@ -25,19 +25,30 @@ class EditRombonganVerifikator extends EditRecord
     protected function mutateFormDataBeforeSave(array $data): array
     {
         // Set verifikator
-        $data['verifikator_id'] = auth()->user()->id;
+        $data['verifikator_id'] = auth()->id();
         $data['tanggal_verifikasi'] = now();
 
         // Cek validasi otomatis
         $isValid = $this->record->checkAutoValidation();
         $data['lolos_verif'] = $isValid;
 
+        // Validasi: Jika status "Belum" tapi keterangan kosong
+        if ($data['status_verifikasi'] === 'Belum' && empty($data['keterangan_verifikasi'])) {
+            Notification::make()
+                ->title('Keterangan Wajib Diisi')
+                ->body('Mohon isi catatan revisi untuk OPD jika status verifikasi adalah "Belum".')
+                ->danger()
+                ->send();
+            
+            $this->halt();
+        }
+
         // Jika status verifikasi *Sudah*
         if ($data['status_verifikasi'] === 'Sudah') {
 
             // Auto-generate keterangan jika lolos verifikasi otomatis
             if ($isValid) {
-                $text = "Lolos Verif - Semua item sudah diverifikasi. Diverifikasi pada " . now()->format('d/m/Y H:i');
+                $text = "Lolos Verif - Semua field sudah diverifikasi. Diverifikasi pada " . now()->format('d/m/Y H:i');
 
                 if (empty($data['keterangan_verifikasi'])) {
                     $data['keterangan_verifikasi'] = $text;
@@ -54,7 +65,10 @@ class EditRombonganVerifikator extends EditRecord
             }
 
         } else {
-            // Jika status verifikasi "Belum"
+            // Jika status verifikasi "Belum", tambahkan timestamp ke catatan
+            if (!empty($data['keterangan_verifikasi'])) {
+                $data['keterangan_verifikasi'] .= "\n\n[Catatan revisi diberikan pada " . now()->format('d/m/Y H:i') . "]";
+            }
             $data['status_pengiriman'] = 'Terkirim ke Verifikator';
         }
 
@@ -70,7 +84,7 @@ class EditRombonganVerifikator extends EditRecord
 
             Notification::make()
                 ->title('Verifikasi Berhasil')
-                ->body('Semua item telah diverifikasi (' . $progress['verified'] . '/' . $progress['total'] . '). Silakan kirim ke SPM dari halaman list.')
+                ->body('Semua field telah diverifikasi (' . $progress['verified'] . '/' . $progress['total'] . '). Silakan kirim ke SPM dari halaman list.')
                 ->success()
                 ->duration(8000)
                 ->send();
@@ -79,7 +93,7 @@ class EditRombonganVerifikator extends EditRecord
 
             Notification::make()
                 ->title('Verifikasi Disimpan')
-                ->body('Progress verifikasi: ' . $progress['verified'] . '/' . $progress['total'] . ' item. Mohon verifikasi semua item terlebih dahulu.')
+                ->body('Progress verifikasi: ' . $progress['verified'] . '/' . $progress['total'] . ' field. Mohon verifikasi semua field terlebih dahulu.')
                 ->warning()
                 ->duration(8000)
                 ->send();
@@ -87,8 +101,8 @@ class EditRombonganVerifikator extends EditRecord
         } else {
 
             Notification::make()
-                ->title('Data Disimpan')
-                ->body('Progress verifikasi: ' . $progress['verified'] . '/' . $progress['total'] . ' item.')
+                ->title('Catatan Revisi Disimpan')
+                ->body('Rombongan akan dikembalikan ke OPD untuk revisi.')
                 ->success()
                 ->send();
         }
@@ -96,6 +110,9 @@ class EditRombonganVerifikator extends EditRecord
 
     protected function getRedirectUrl(): string
     {
-        return static::getResource()::getUrl('index');
+        // Redirect ke index dengan parameter query untuk maintain filter
+        $filters = session()->get('filament.admin.resources.rombongan-verifikator-resource.tableFilters', []);
+        
+        return static::getResource()::getUrl('index', $filters ? ['tableFilters' => $filters] : []);
     }
 }

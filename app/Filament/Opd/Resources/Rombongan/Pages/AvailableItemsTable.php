@@ -181,3 +181,4 @@ class AvailableItemsTable extends BaseWidget
         ];
     }
 }
+

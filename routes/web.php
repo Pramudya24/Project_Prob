@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Filament\Verifikator\Resources\RombonganVerifikatorResource\Pages\EditRombonganVerifikator;
 use App\Models\RombonganItem;
 
 
@@ -54,30 +55,33 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::post('/verifikator/rombongan-verifikators/verify-field', function () {
-    $data = request()->validate([
-        'rombongan_item_id' => 'required|exists:rombongan_items,id',
-        'field_name' => 'required|string',
-        'is_verified' => 'required|boolean',
-    ]);
+Route::post('/verifikator/rombongan-verifikators/save-field-note', 
+    [EditRombonganVerifikator::class, 'saveFieldNote']
+)->name('verifikator.save-field-note')->middleware(['auth']);
 
-    $rombonganItem = RombonganItem::find($data['rombongan_item_id']);
+Route::post('/verifikator/rombongan-verifikators/verify-field', 
+    [EditRombonganVerifikator::class, 'verifyField']
+)->name('verifikator.verify-field')->middleware(['auth']);
 
-    if (!$rombonganItem) {
-        return response()->json(['success' => false, 'message' => 'Item not found'], 404);
+/**
+ * Route untuk serve file dari storage/app/private
+ * Format URL: /private-file/realisasi/nama-file.jpg
+ */
+Route::get('/private-file/{path}', function ($path) {
+    $filePath = storage_path('app/private/' . $path);
+    
+    // Cek apakah file exists
+    if (!file_exists($filePath)) {
+        abort(404, 'File not found');
     }
-
-    $verification = $rombonganItem->getOrCreateFieldVerification($data['field_name']);
-
-    $verification->update([
-        'is_verified' => $data['is_verified'],
-        'verified_at' => $data['is_verified'] ? now() : null,
-        'verified_by' => $data['is_verified'] ? auth()->id() : null,
+    
+    // Get mime type
+    $mimeType = mime_content_type($filePath);
+    
+    // Return file dengan headers yang benar
+    return response()->file($filePath, [
+        'Content-Type' => $mimeType,
+        'Cache-Control' => 'public, max-age=31536000', // Cache 1 tahun
     ]);
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Verifikasi berhasil disimpan'
-    ]);
-})->middleware('auth')->name('verifikator.verify-field');
+})->where('path', '.*')->name('private.file');
 require __DIR__ . '/auth.php';
