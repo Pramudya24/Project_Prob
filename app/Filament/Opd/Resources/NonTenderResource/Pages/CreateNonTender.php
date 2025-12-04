@@ -9,7 +9,7 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateNonTender extends CreateRecord
 {
     protected static string $resource = NonTenderResource::class;
-    protected ?string $heading = 'Tambah Data Non Tender';
+    protected ?string $heading = 'Tambah Data Pencatatan Non Tender';
     // ✅ PERBAIKI: Gunakan $this->getResource()::class
     protected function getRedirectUrl(): string
     {

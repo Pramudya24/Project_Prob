@@ -18,12 +18,13 @@ class SwakelolaResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationLabel = 'Pencatatan Swakelola';
-    protected static ?int $navigationSort = 5;
     protected static ?string $navigationGroup = 'Form';
+    protected static ?int $navigationSort = 5;
+    
 
     public static function getModelLabel(): string
     {
-        return 'Data Swakelola';
+        return 'Data Pencatatan Swakelola';
     }
 
     protected static ?string $pluralModelLabel = 'Data Pencatatan Swakelola';
@@ -52,12 +53,21 @@ class SwakelolaResource extends Resource
                             ->label('Kode RUP')
                             ->required()
                             ->rule('numeric')
-                            ->integer(),
+                            ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ]),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
                             ->required()
                             ->rule('numeric')
+                            ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ])
                             ->prefix('Rp'),
 
                         Forms\Components\TextInput::make('kode_paket')
@@ -98,7 +108,12 @@ class SwakelolaResource extends Resource
                         Forms\Components\TextInput::make('nilai_kontrak')
                             ->label('Nilai Kontrak')
                             ->required()
-                            ->numeric()
+                            ->rule('numeric')
+                            ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ])
                             ->prefix('Rp')
                             ->placeholder('0')
                             ->columnSpanFull(),
@@ -124,7 +139,7 @@ class SwakelolaResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('pagu_rup')
                     ->label('Pagu RUP')
-                    ->money('IDR')
+                    ->formatStateUsing(fn($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('nilai_kontrak')
                     ->label('Nilai Kontrak')

@@ -9,7 +9,7 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateSwakelola extends CreateRecord
 {
     protected static string $resource = SwakelolaResource::class;
-    protected ?string $heading = 'Tambah Data Swakelola';
+    protected ?string $heading = 'Tambah Data Pencatatan Swakelola';
     // ✅ PERBAIKI: Gunakan $this->getResource()::class
     protected function getRedirectUrl(): string
     {

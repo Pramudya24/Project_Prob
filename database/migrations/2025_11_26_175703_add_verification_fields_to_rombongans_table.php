@@ -17,7 +17,11 @@ return new class extends Migration
             $table->foreignId('verifikator_id')->nullable()->constrained('users')->after('keterangan_verifikasi');
             $table->timestamp('tanggal_verifikasi')->nullable()->after('verifikator_id');
             $table->boolean('lolos_verif')->default(false)->after('tanggal_verifikasi');
-            $table->enum('status_pengiriman', ['Belum Dikirim', 'Terkirim ke Verifikator', 'Revisi', 'Dikirim ke SPM'])->default('Belum Dikirim')->after('lolos_verif');
+            $table->enum('status_pengiriman', [
+                'Terkirim ke Verifikator', 
+                'Data Progres', 
+                'Data Sudah Progres'
+            ])->default('Terkirim ke Verifikator')->after('lolos_verif');
         });
     }
 
@@ -27,6 +31,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('rombongans', function (Blueprint $table) {
+            // Hapus foreign key constraint terlebih dahulu
+            $table->dropForeign(['verifikator_id']);
+            
+            // Baru hapus kolom-kolomnya
             $table->dropColumn([
                 'status_verifikasi',
                 'keterangan_verifikasi',

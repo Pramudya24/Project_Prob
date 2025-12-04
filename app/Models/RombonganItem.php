@@ -114,22 +114,19 @@ class RombonganItem extends Model
     /**
      * Get verification progress
      */
-    public function getVerificationProgress(): array
+    public function getVerificationProgress()
     {
-        $fields = $this->getVerifiableFields();
-        $total = count($fields);
-        $verified = 0;
-
-        foreach ($fields as $field) {
-            if ($this->isFieldVerified($field)) {
-                $verified++;
-            }
-        }
-
+        $fieldVerifications = $this->fieldVerifications;
+        
+        $total = $fieldVerifications->count();
+        $verified = $fieldVerifications->where('is_verified', true)->count();
+        
+        $percentage = $total > 0 ? ($verified / $total) * 100 : 0;
+        
         return [
             'total' => $total,
             'verified' => $verified,
-            'percentage' => $total > 0 ? round(($verified / $total) * 100) : 0,
+            'percentage' => (int) round($percentage), // CAST ke integer
         ];
     }
 

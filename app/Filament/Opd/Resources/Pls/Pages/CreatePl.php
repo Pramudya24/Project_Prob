@@ -8,7 +8,7 @@ use Filament\Resources\Pages\CreateRecord;
 class CreatePl extends CreateRecord
 {
     protected static string $resource = PlResource::class;
-    protected ?string $heading = 'Tambah Data PL';
+    protected ?string $heading = 'Tambah Data Non Tender';
     // ✅ PERBAIKI: Gunakan $this->getResource()::class
     protected function getRedirectUrl(): string
     {

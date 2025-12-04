@@ -4,9 +4,6 @@ namespace App\Filament\Verifikator\Resources;
 
 use App\Filament\Verifikator\Resources\RombonganVerifikatorResource\Pages;
 use App\Models\Rombongan;
-use App\Models\Opd;
-use App\Models\RombonganItem;
-use App\Models\RombonganItemFieldVerification;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -278,7 +275,7 @@ class RombonganVerifikatorResource extends Resource
                                 </div>
                             </div>';
 
-                            // JavaScript
+                            // JavaScript (sama seperti sebelumnya)
                             $html .= '<script>
                                 function handleVerificationChange(rombonganItemId, fieldName, isChecked) {
                                     fetch("/verifikator/rombongan-verifikators/verify-field", {
@@ -296,12 +293,60 @@ class RombonganVerifikatorResource extends Resource
                                     .then(response => response.json())
                                     .then(data => {
                                         if (data.success) {
-                                            window.location.reload();
+                                            const checkbox = document.getElementById(`verify_${rombonganItemId}_${fieldName}`);
+                                            if (checkbox) {
+                                                const row = checkbox.closest("tr");
+                                                if (row) {
+                                                    if (isChecked) {
+                                                        row.classList.add("bg-green-50", "dark:bg-green-900/20");
+                                                    } else {
+                                                        row.classList.remove("bg-green-50", "dark:bg-green-900/20");
+                                                    }
+                                                }
+                                                
+                                                const badge = checkbox.closest("td").querySelector(".inline-flex");
+                                                if (badge) {
+                                                    if (isChecked) {
+                                                        badge.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
+                                                        badge.textContent = "✓ Sudah";
+                                                    } else {
+                                                        badge.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100";
+                                                        badge.textContent = "○ Belum";
+                                                    }
+                                                }
+                                            }
+                                            updateProgressBar(rombonganItemId);
                                         }
                                     })
                                     .catch(error => {
                                         console.error("Error:", error);
-                                        alert("Gagal menyimpan verifikasi");
+                                        alert("Gagal menyimpan verifikasi. Silakan coba lagi.");
+                                    });
+                                }
+                                
+                                function updateProgressBar(rombonganItemId) {
+                                    const checkboxes = document.querySelectorAll(`input[data-rombongan-item-id="${rombonganItemId}"]`);
+                                    const total = checkboxes.length;
+                                    const verified = Array.from(checkboxes).filter(cb => cb.checked).length;
+                                    const percentage = Math.round((verified / total) * 100);
+                                    
+                                    checkboxes[0]?.closest(".border").querySelectorAll(".mb-4").forEach(div => {
+                                        const progressText = div.querySelector("span");
+                                        if (progressText && progressText.textContent.includes("Progress:")) {
+                                            progressText.textContent = `Progress: ${verified}/${total} field (${percentage}%)`;
+                                        }
+                                        
+                                        const progressBar = div.querySelector(".h-2");
+                                        if (progressBar) {
+                                            progressBar.style.width = `${percentage}%`;
+                                            if (percentage === 100) {
+                                                progressBar.className = "bg-green-500 h-2 rounded-full transition-all";
+                                            } else if (percentage >= 50) {
+                                                progressBar.className = "bg-yellow-500 h-2 rounded-full transition-all";
+                                            } else {
+                                                progressBar.className = "bg-red-500 h-2 rounded-full transition-all";
+                                            }
+                                        }
                                     });
                                 }
                                 
@@ -334,6 +379,10 @@ class RombonganVerifikatorResource extends Resource
                                         return;
                                     }
                                     
+                                    const btn = event.target;
+                                    btn.disabled = true;
+                                    btn.textContent = "Memproses...";
+                                    
                                     fetch("/verifikator/rombongan-verifikators/verify-all-fields", {
                                         method: "POST",
                                         headers: {
@@ -347,12 +396,41 @@ class RombonganVerifikatorResource extends Resource
                                     .then(response => response.json())
                                     .then(data => {
                                         if (data.success) {
-                                            window.location.reload();
+                                            const checkboxes = document.querySelectorAll(`input[data-rombongan-item-id="${rombonganItemId}"]`);
+                                            checkboxes.forEach(checkbox => {
+                                                checkbox.checked = true;
+                                                const row = checkbox.closest("tr");
+                                                if (row) {
+                                                    row.classList.add("bg-green-50", "dark:bg-green-900/20");
+                                                }
+                                                const badge = checkbox.closest("td").querySelector(".inline-flex");
+                                                if (badge) {
+                                                    badge.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
+                                                    badge.textContent = "✓ Sudah";
+                                                }
+                                            });
+                                            
+                                            const total = checkboxes.length;
+                                            const progressText = btn.closest(".mb-4").querySelector("span");
+                                            if (progressText) {
+                                                progressText.textContent = `Progress: ${total}/${total} field (100%)`;
+                                            }
+                                            
+                                            const progressBar = btn.closest(".mb-4").querySelector(".h-2");
+                                            if (progressBar) {
+                                                progressBar.className = "bg-green-500 h-2 rounded-full transition-all";
+                                                progressBar.style.width = "100%";
+                                            }
+                                            
+                                            btn.style.display = "none";
+                                            alert("✓ Semua field berhasil diverifikasi!");
                                         }
                                     })
                                     .catch(error => {
                                         console.error("Error:", error);
-                                        alert("Gagal centang semua field");
+                                        btn.disabled = false;
+                                        btn.textContent = "✓ Centang Semua";
+                                        alert("Gagal centang semua field. Silakan coba lagi.");
                                     });
                                 }
                                 
@@ -427,72 +505,96 @@ class RombonganVerifikatorResource extends Resource
                     ->color(fn($state) => match ($state) {
                         'Belum Dikirim' => 'gray',
                         'Terkirim ke Verifikator' => 'info',
-                        'Revisi' => 'warning',
-                        'Dikirim ke SPM' => 'success',
+                        'Dikirim ke Data Progres' => 'warning',
+                        'Dikirim ke Data Sudah Progres' => 'success',
                         default => 'gray',
                     }),
             ])
 
-            ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make()
-                    ->label('Verifikasi'),
+                ->actions([
+    Tables\Actions\EditAction::make()
+        ->label('Verifikasi')
+        ->icon('heroicon-o-pencil-square')
+        ->color('info'),
 
-                Tables\Actions\Action::make('kirim_ke_spm')
-                    ->label('Kirim ke SPM')
-                    ->icon('heroicon-o-paper-airplane')
-                    ->color('success')
-                    ->visible(
-                        fn($record) =>
-                        $record->status_verifikasi === 'Sudah'
-                            && $record->checkAutoValidation()
-                            && $record->status_pengiriman !== 'Dikirim ke SPM'
-                    )
-                    ->requiresConfirmation()
-                    ->modalHeading('Kirim Rombongan ke SPM')
-                    ->modalDescription('Rombongan ini sudah lolos verifikasi dan akan dikirim ke SPM. Apakah Anda yakin?')
-                    ->modalSubmitActionLabel('Ya, Kirim ke SPM')
-                    ->action(function ($record) {
-                        $record->update([
-                            'status_pengiriman' => 'Dikirim ke SPM',
-                            'lolos_verif' => true,
-                        ]);
+    // Button: Kirim ke Data Progres (untuk OPD perbaiki)
+    Tables\Actions\Action::make('kirim_ke_data_progres')
+        ->label('Kirim ke Data Progres')
+        ->icon('heroicon-o-arrow-path')
+        ->color('warning')
+        ->visible(function ($record) {
+            $progress = $record->getVerificationProgress();
+            return (int) $progress['percentage'] < 100 
+                && $record->status_pengiriman === 'Terkirim ke Verifikator';
+        })
+        ->requiresConfirmation()
+        ->modalHeading('Kirim ke Data Progres')
+        ->modalDescription(fn($record) => 
+            'Data rombongan "' . $record->nama_rombongan . '" belum lengkap (' . 
+            $record->getVerificationProgress()['percentage'] . '%). ' .
+            'Data akan dikirim ke OPD untuk diperbaiki.'
+        )
+        ->modalSubmitActionLabel('Ya, Kirim ke OPD')
+        ->action(function ($record) {
+            $record->update([
+                'status_pengiriman' => 'Data Progres', // Status untuk ditampilkan di DataProgres.php
+                'status_verifikasi' => 'Belum',
+                'lolos_verif' => false,
+                'keterangan_verifikasi' => 'Perlu revisi - Verifikasi belum lengkap',
+                'tanggal_verifikasi' => now(),
+                'verifikator_id' => auth()->id(),
+            ]);
 
-                        Notification::make()
-                            ->title('Berhasil Dikirim ke SPM')
-                            ->body('Rombongan "' . $record->nama_rombongan . '" telah dikirim ke SPM.')
-                            ->success()
-                            ->send();
-                    }),
+            // Debug: Cek nilai yang tersimpan
+            \Log::info('Data dikirim:', [
+                'nama_rombongan' => $record->nama_rombongan,
+                'status_pengiriman' => $record->status_pengiriman,
+                'nama_opd' => $record->nama_opd,
+            ]);
 
-                Tables\Actions\Action::make('kirim_kembali')
-                    ->label('Kirim Kembali')
-                    ->icon('heroicon-o-arrow-uturn-left')
-                    ->color('warning')
-                    ->visible(
-                        fn($record) =>
-                        $record->status_verifikasi === 'Sudah'
-                            && !$record->checkAutoValidation()
-                    )
-                    ->requiresConfirmation()
-                    ->modalHeading('Kirim Kembali ke OPD untuk Revisi')
-                    ->modalDescription('Rombongan ini akan dikembalikan ke OPD untuk diperbaiki.')
-                    ->action(function ($record) {
-                        $record->update([
-                            'status_verifikasi' => 'Belum',
-                            'status_pengiriman' => 'Revisi',
-                            'keterangan_verifikasi' => ($record->keterangan_verifikasi ?? '') .
-                                "\n\n[Dikembalikan untuk revisi pada " . now()->format('d/m/Y H:i') . "]",
-                        ]);
+            Notification::make()
+                ->title('Berhasil Dikirim ke Data Progres OPD')
+                ->body('Rombongan "' . $record->nama_rombongan . '" telah dikirim ke Data Progres untuk diperbaiki OPD.')
+                ->success()
+                ->send();
+        }),
 
-                        Notification::make()
-                            ->title('Rombongan dikembalikan ke OPD')
-                            ->success()
-                            ->send();
-                    }),
-            ])
+    // Button: Kirim ke Data Sudah Progres (data selesai 100%)
+    Tables\Actions\Action::make('kirim_ke_data_sudah_progres')
+        ->label('Kirim ke Data Sudah Progres')
+        ->icon('heroicon-o-check-circle')
+        ->color('success')
+        ->visible(function ($record) {
+            $progress = $record->getVerificationProgress();
+            return (int) $progress['percentage'] === 100 
+                && $record->status_pengiriman === 'Terkirim ke Verifikator';
+        })
+        ->requiresConfirmation()
+        ->modalHeading('Kirim ke Data Sudah Progres')
+        ->modalDescription(fn($record) => 
+            'Data rombongan "' . $record->nama_rombongan . '" sudah diverifikasi 100%. ' .
+            'Data akan dikirim ke halaman Data Sudah Progres OPD.'
+        )
+        ->modalSubmitActionLabel('Ya, Kirim')
+        ->action(function ($record) {
+            $record->update([
+                'status_pengiriman' => 'Data Sudah Progres', // Status untuk ditampilkan di DataSudahProgres.php
+                'status_verifikasi' => 'Sudah',
+                'lolos_verif' => true,
+                'keterangan_verifikasi' => 'Sudah diverifikasi 100%',
+                'tanggal_verifikasi' => now(),
+                'verifikator_id' => auth()->id(),
+            ]);
 
-            ->defaultSort('tanggal_masuk_verifikator', 'desc');
+            Notification::make()
+                ->title('Berhasil Dikirim ke Data Sudah Progres')
+                ->body('Rombongan "' . $record->nama_rombongan . '" telah dikirim ke Data Sudah Progres OPD.')
+                ->success()
+                ->send();
+        }),
+])
+
+->defaultSort('tanggal_masuk_verifikator', 'desc');
     }
 
     public static function getPages(): array
@@ -504,10 +606,9 @@ class RombonganVerifikatorResource extends Resource
         ];
     }
 
-    // Filter hanya untuk verifikator
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->where('status_pengiriman', '!=', 'Belum Dikirim');
+            ->where('status_pengiriman', 'Terkirim ke Verifikator');
     }
 }

@@ -21,11 +21,13 @@ class EpurcasingResource extends Resource
 
     protected static ?string $navigationLabel = 'Epurcasing';
 
+    protected static ?string $navigationGroup = 'Form';
+
 
     protected static ?int $navigationSort = 1;
 
 
-    protected static ?string $navigationGroup = 'Form';
+    
 
     public static function getModelLabel(): string
     {
@@ -57,12 +59,22 @@ class EpurcasingResource extends Resource
                         Forms\Components\TextInput::make('kode_rup')
                             ->label('Kode RUP')
                             ->required()
-                            ->rule('numeric'),
+                            ->rule('numeric')
+                            ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ]),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
                             ->required()
                             ->rule('numeric')
+                            ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ])
                             ->prefix('Rp'),
 
                         Forms\Components\TextInput::make('kode_paket')
@@ -102,7 +114,12 @@ class EpurcasingResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('nilai_kontrak')
                             ->label('Nilai Kontrak')
-                            ->numeric()
+                            ->rule('numeric')
+                            ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ])
                             ->required()
                             ->live(onBlur: true)
                             ->prefix('Rp')
@@ -173,7 +190,12 @@ class EpurcasingResource extends Resource
                                             ->schema([
                                                 Forms\Components\TextInput::make('persentase_tkdn')
                                                     ->label('Persentase TKDN')
-                                                    ->numeric()
+                                                    ->rule('numeric')
+                                                    ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ])
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
@@ -292,7 +314,7 @@ class EpurcasingResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('pagu_rup')
                     ->label('Pagu RUP')
-                    ->money('IDR')
+                    ->formatStateUsing(fn($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('nilai_kontrak')
                     ->label('Nilai Kontrak')

@@ -9,7 +9,7 @@ use Filament\Resources\Pages\CreateRecord;
 class CreatePengadaanDarurat extends CreateRecord
 {
     protected static string $resource = PengadaanDaruratResource::class;
-protected ?string $heading = 'Tambah Data Pengadaan Darurat';
+protected ?string $heading = 'Tambah Data Pencatatan Pengadaan Darurat';
     // ✅ PERBAIKI: Gunakan $this->getResource()::class
     protected function getRedirectUrl(): string
     {

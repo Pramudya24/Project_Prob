@@ -15,6 +15,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'opd_code',
     ];
 
     protected $hidden = [
@@ -28,5 +29,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function opd()
+    {
+        return $this->belongsTo(Opd::class, 'opd_code', 'code');
     }
 }

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;  // ✅
+use Illuminate\Support\Facades\Auth; // ✅ benar
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -29,6 +31,27 @@ class Rombongan extends Model
         'lolos_verif' => 'boolean',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (auth()->check()) {
+                $model->nama_opd = auth()->user()->opd_code;
+            }
+        });
+    }
+
+    protected static function booted()
+    {
+        static::addGlobalScope('opd_filter', function (Builder $builder) {
+            $user = Auth::user();
+            
+            if ($user && $user->hasRole('opd') && $user->opd_code) {
+                $builder->where('nama_opd', $user->opd_code);
+            }
+        });
+    }
 
     // Relasi ke verifikator (User)
     public function verifikator(): BelongsTo
@@ -266,7 +289,6 @@ class Rombongan extends Model
         return $grouped;
     }
 
-    // Method untuk menghitung progress verifikasi per type
     public function getVerificationProgress()
     {
         $items = $this->RombonganItems()->with('fieldVerifications')->get();
@@ -280,10 +302,12 @@ class Rombongan extends Model
             $verifiedFields += $progress['verified'];
         }
 
+        $percentage = $totalFields > 0 ? ($verifiedFields / $totalFields) * 100 : 0;
+
         return [
             'total' => $totalFields,
             'verified' => $verifiedFields,
-            'percentage' => $totalFields > 0 ? round(($verifiedFields / $totalFields) * 100) : 0,
+            'percentage' => (int) round($percentage), // CAST ke integer
         ];
     }
 
@@ -333,5 +357,44 @@ class Rombongan extends Model
         }
 
         return $grouped;
+    }
+    // Tambahkan di bagian akhir class sebelum }
+    public function shouldShowDataProgresButton(): bool
+    {
+        $progress = $this->getVerificationProgress();
+        return $progress['percentage'] < 100 && $this->status_pengiriman === 'Terkirim ke Verifikator';
+    }
+
+    public function shouldShowDataSudahProgresButton(): bool
+    {
+        $progress = $this->getVerificationProgress();
+        return $progress['percentage'] === 100 && $this->status_pengiriman === 'Terkirim ke Verifikator';
+    }
+
+    public function shouldShowKirimKembaliButton(): bool
+    {
+        $progress = $this->getVerificationProgress();
+        return $progress['percentage'] < 100 && $this->status_pengiriman === 'Terkirim ke Verifikator';
+    }
+
+    public function updateVerificationStatus(): void
+    {
+        $progress = $this->getVerificationProgress();
+        
+        if ($progress['percentage'] === 100) {
+            $this->update([
+                'status_verifikasi' => 'Sudah',
+                'lolos_verif' => true,
+                'tanggal_verifikasi' => now(),
+                'verifikator_id' => auth()->id(),
+            ]);
+        } else {
+            $this->update([
+                'status_verifikasi' => 'Belum',
+                'lolos_verif' => false,
+                'tanggal_verifikasi' => null,
+                'verifikator_id' => null,
+            ]);
+        }
     }
 }

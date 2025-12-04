@@ -20,13 +20,15 @@ class PengadaanDaruratResource extends Resource
 
     protected static ?string $navigationLabel = 'Pencatatan Pengadaan Darurat';
 
+    protected static ?string $navigationGroup = 'Form';
+
     protected static ?int $navigationSort = 4;
 
-    protected static ?string $navigationGroup = 'Form';
+    
 
     public static function getModelLabel(): string
     {
-        return 'Data Pengadaan Darurat';
+        return 'Data Pencatatan Pengadaan Darurat';
     }
     
     protected static ?string $pluralModelLabel = 'Data Pencatatan Pengadaan Darurat';
@@ -55,12 +57,21 @@ class PengadaanDaruratResource extends Resource
                             ->label('Kode RUP')
                             ->required()
                             ->rule('numeric')
-                            ->integer(), 
+                            ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ]),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
                             ->required()
                             ->rule('numeric')
+                            ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ])
                             ->prefix('Rp'),
 
                         Forms\Components\TextInput::make('kode_paket')
@@ -100,7 +111,12 @@ class PengadaanDaruratResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('nilai_kontrak')
                             ->label('Nilai Kontrak')
-                            ->numeric()
+                            ->rule('numeric')
+                            ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ])
                             ->required()
                             ->live(onBlur: true)
                             ->prefix('Rp')
@@ -169,7 +185,12 @@ class PengadaanDaruratResource extends Resource
                                             ->schema([
                                                 Forms\Components\TextInput::make('persentase_tkdn')
                                                     ->label('Persentase TKDN')
-                                                    ->numeric()
+                                                    ->rule('numeric')
+                                                    ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ])
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
@@ -253,7 +274,7 @@ class PengadaanDaruratResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('pagu_rup')
                     ->label('Pagu RUP')
-                    ->money('IDR')
+                    ->formatStateUsing(fn($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('nilai_kontrak')
                     ->label('Nilai Kontrak')

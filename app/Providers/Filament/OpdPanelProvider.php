@@ -10,6 +10,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Widgets;
+use Filament\Navigation\NavigationGroup;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -22,59 +23,63 @@ use Illuminate\Support\Facades\Blade;
 class OpdPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
-{
-    return $panel
-        ->default()
-        ->id('opd')
-        ->path('opd')
-        ->brandName('SIVERA')
-        ->renderHook(
-        'panels::global-search.after',
-        fn (): string => Blade::render('
-            <div class="text-sm font-medium text-gray-600 dark:text-gray-300">
-                ' . (auth()->user()->name ?? 'Nama OPD Anda') . '
-            </div>
-        '))
-        ->colors([
-            'primary' => Color::Blue,
-        ])
-        // 🟢 Discover resources OTOMATIS
-        ->discoverResources(
-            in: app_path('Filament/Opd/Resources'),
-            for: 'App\\Filament\\Opd\\Resources'
-        )
-        // 🟢 TAMBAHKAN INI - Register manual untuk RombonganResource
-        ->resources([
-            \App\Filament\Opd\Resources\Rombongan\RombonganResource::class,
-        ])
-        ->discoverPages(
-            in: app_path('Filament/Opd/Pages'),
-            for: 'App\\Filament\\Opd\\Pages'
-        )
-        ->pages([
-            Pages\Dashboard::class,
-        ])
-        ->discoverWidgets(
-            in: app_path('Filament/Opd/Widgets'),
-            for: 'App\\Filament\\Opd\\Widgets'
-        )
-        ->widgets([
-            Widgets\AccountWidget::class,
-        ])
-        ->middleware([
-            EncryptCookies::class,
-            AddQueuedCookiesToResponse::class,
-            StartSession::class,
-            AuthenticateSession::class,
-            ShareErrorsFromSession::class,
-            VerifyCsrfToken::class,
-            SubstituteBindings::class,
-            DisableBladeIconComponents::class,
-            DispatchServingFilamentEvent::class,
-            \App\Http\Middleware\OpdMiddleware::class,
-        ])
-        ->authMiddleware([
-            Authenticate::class,
-        ]);
+    {
+        return $panel
+            ->default()
+            ->id('opd')
+            ->path('opd')
+            ->brandName('SIVERA')
+            ->renderHook(
+                'panels::global-search.after',
+                fn (): string => Blade::render('
+                    <div class="text-sm font-medium text-gray-600 dark:text-gray-300">
+                        ' . (auth()->user()->name ?? 'Nama OPD Anda') . '
+                    </div>
+                ')
+            )
+            ->colors([
+                'primary' => Color::Blue,
+            ])
+            // MATIKAN discoverResources, daftar manual saja
+            ->resources([
+                \App\Filament\Opd\Resources\EpurcasingResource::class,
+                \App\Filament\Opd\Resources\Pls\PlResource::class,
+                \App\Filament\Opd\Resources\NonTenderResource::class,
+                \App\Filament\Opd\Resources\PengadaanDaruratResource::class,
+                \App\Filament\Opd\Resources\SwakelolaResource::class,
+                \App\Filament\Opd\Resources\TenderResource::class,
+                \App\Filament\Opd\Resources\VerifikasiResource::class,
+                \App\Filament\Opd\Resources\Rombongan\RombonganResource::class,
+                // Tambahkan resource lain jika ada (PlResource, dll)
+            ])
+            ->pages([
+                \App\Filament\Opd\Pages\Dashboard::class,
+            ])
+            ->discoverWidgets(
+                in: app_path('Filament/Opd/Widgets'),
+                for: 'App\\Filament\\Opd\\Widgets'
+            )
+            ->widgets([
+                Widgets\AccountWidget::class,
+            ])
+            ->navigationGroups([
+                NavigationGroup::make('Form')
+                    ->collapsible(),
+            ])
+            ->middleware([
+                EncryptCookies::class,
+                AddQueuedCookiesToResponse::class,
+                StartSession::class,
+                AuthenticateSession::class,
+                ShareErrorsFromSession::class,
+                VerifyCsrfToken::class,
+                SubstituteBindings::class,
+                DisableBladeIconComponents::class,
+                DispatchServingFilamentEvent::class,
+                \App\Http\Middleware\OpdMiddleware::class,
+            ])
+            ->authMiddleware([
+                Authenticate::class,
+            ]);
     }
 }

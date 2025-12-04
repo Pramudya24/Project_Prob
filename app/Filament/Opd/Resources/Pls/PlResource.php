@@ -21,13 +21,15 @@ class PlResource extends Resource
 
     protected static ?string $navigationLabel = 'Non Tender';
 
+    protected static ?string $navigationGroup = 'Form';
+
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $navigationGroup = 'Form';
+    
 
     public static function getModelLabel(): string
     {
-        return 'Data PL';
+        return 'Data Non Tender';
     }
 
     protected static ?string $pluralModelLabel = 'Data Non Tender';
@@ -55,13 +57,22 @@ class PlResource extends Resource
                         Forms\Components\TextInput::make('kode_rup')
                             ->label('Kode RUP')
                             ->required()
-                            ->rule('numeric') // ✅ HANYA ANGKA
-                            ->integer(),
+                            ->rule('numeric')
+                            ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ]), // ✅ HANYA ANGKA
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
                             ->required()
                             ->rule('numeric')
+                            ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ])
                             ->prefix('Rp'),
 
                         Forms\Components\TextInput::make('kode_paket')
@@ -87,9 +98,7 @@ class PlResource extends Resource
                         Forms\Components\Select::make('metode_pengadaan')
                             ->label('Metode Pengadaan')
                             ->options([
-                                'Dikecualikan' => 'Dikecualikan',
-                                'Pengadaan Langsung' => 'Pengadaan Langsung',
-                                'Penunjukan Langsung' => 'Penunjukan Langsung',
+                                'E-Pengadaan Langsung' => 'E-Pengadaan Langsung',
                                 'E-Penunjukan Langsung' => 'E-Penunjukan Langsung',
                             ])
                             ->native(false)
@@ -111,7 +120,12 @@ class PlResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('nilai_kontrak')
                             ->label('Nilai Kontrak')
-                            ->numeric()
+                            ->rule('numeric')
+                            ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ])
                             ->required()
                             ->live(onBlur: true)
                             ->prefix('Rp')
@@ -182,7 +196,12 @@ class PlResource extends Resource
                                             ->schema([
                                                 Forms\Components\TextInput::make('persentase_tkdn')
                                                     ->label('Persentase TKDN')
-                                                    ->numeric()
+                                                    ->rule('numeric')
+                                                    ->extraInputAttributes([
+                                    'pattern' => '[0-9]*',
+                                    'inputmode' => 'numeric',
+                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                ])
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
@@ -305,7 +324,7 @@ class PlResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('pagu_rup')
                     ->label('Pagu RUP')
-                    ->money('IDR')
+                    ->formatStateUsing(fn($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('nilai_kontrak')
                     ->label('Nilai Kontrak')
