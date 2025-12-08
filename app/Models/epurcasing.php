@@ -31,9 +31,11 @@ class Epurcasing extends Model
         'nilai_umk',
         'serah_terima',
         'penilaian_kinerja',
+        'metode_pengadaan',
     ];
 
     protected $casts = [
+        'metode_pengadaan' => MetodePengadaan::class,
         'pagu_rup' => 'integer',
     ];
 
@@ -60,6 +62,27 @@ class Epurcasing extends Model
                 $builder->where('nama_opd', $user->opd_code);
             }
         });
+    }
+
+    protected function setMetodePengadaanAttribute($value)
+    {
+        if ($value === '' || $value === null) {
+            $this->attributes['metode_pengadaan'] = null;
+            return;
+        }
+
+        // Jika sudah Enum object, ambil value-nya
+        if ($value instanceof MetodePengadaan) {
+            $this->attributes['metode_pengadaan'] = $value->value;
+            return;
+        }
+
+        $this->attributes['metode_pengadaan'] = $value;
+    }
+
+    public function getMetodePengadaanLabelAttribute(): ?string
+    {
+        return $this->metode_pengadaan?->value ?? null;
     }
 
 public function rombongans(): MorphToMany

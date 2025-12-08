@@ -2,9 +2,22 @@
 
 namespace App\Providers\Filament;
 
+use Filament\Http\Middleware\Authenticate;
+use Filament\Http\Middleware\DisableBladeIconComponents;
+use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Support\Colors\Color;
+use Filament\Widgets;
 use Filament\Navigation\NavigationItem;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Session\Middleware\AuthenticateSession;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -13,91 +26,48 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('opd')
+            ->path('')  // ⭐ Path tetap 'opd'
             ->login()
-
-            // ⭐ Tambahkan navigation di sini
-            ->navigation([
+            ->colors([
+                'primary' => Color::Blue,
+            ])
+            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
+            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+            ->pages([
+                Pages\Dashboard::class,
+            ])
+            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
+            ->widgets([
+                Widgets\AccountWidget::class,
+                Widgets\FilamentInfoWidget::class,
+            ])
+            ->middleware([
+                EncryptCookies::class,
+                AddQueuedCookiesToResponse::class,
+                StartSession::class,
+                AuthenticateSession::class,
+                ShareErrorsFromSession::class,
+                VerifyCsrfToken::class,
+                SubstituteBindings::class,
+                DisableBladeIconComponents::class,
+                DispatchServingFilamentEvent::class,
+            ])
+            ->authMiddleware([
+                Authenticate::class,
+            ])
+            
+            // Navigation items custom kamu
+            ->navigationItems([
                 NavigationItem::make('Menu Baru')
                     ->icon('heroicon-o-folder')
-                    ->url(route('filament.admin.pages.menu-baru')),
+                    ->url(fn() => route('filament.admin.pages.menu-baru'))
+                    ->visible(fn() => false), // Set true jika mau ditampilkan
             ])
-
-            // Hook kamu tetap ada
+            
+            // Render hook untuk tooltips (kalau view-nya ada)
             ->renderHook(
                 'panels::body.end',
                 fn () => view('filament.hooks.sidebar-tooltips')
             );
     }
 }
-
-//                 <script>
-//                     document.addEventListener('DOMContentLoaded', function() {
-//                         addSidebarTooltips();
-//                     });
-                    
-//                     function addSidebarTooltips() {
-//                         const tooltips = {
-//                             'Epurcasing': 'Form untuk keperluan elektronik purchasing',
-//                             'Non Tender': 'Form pengadaan barang/jasa tanpa proses tender',
-//                             'Pencatatan Non Tender': 'Form untuk mencatat transaksi non tender',
-//                             'Pencatatan Pengadaan Darurat': 'Form pencatatan untuk kondisi darurat',
-//                             'Pencatatan Swakelola': 'Form pencatatan untuk pengerjaan swakelola',
-//                             'Tender': 'Form dan proses tender pengadaan',
-//                         };
-                        
-//                         document.querySelectorAll('.fi-sidebar-item-button').forEach(button => {
-//                             const label = button.querySelector('.fi-sidebar-item-label');
-//                             if (label) {
-//                                 const menuName = label.textContent.trim();
-//                                 if (tooltips[menuName]) {
-//                                     // Buat tooltip element
-//                                     button.setAttribute('x-data', `{ showTooltip: false }`);
-//                                     button.setAttribute('@mouseenter', 'showTooltip = true');
-//                                     button.setAttribute('@mouseleave', 'showTooltip = false');
-                                    
-//                                     const tooltipDiv = document.createElement('div');
-//                                     tooltipDiv.setAttribute('x-show', 'showTooltip');
-//                                     tooltipDiv.setAttribute('x-transition', '');
-//                                     tooltipDiv.className = 'custom-sidebar-tooltip';
-//                                     tooltipDiv.textContent = tooltips[menuName];
-                                    
-//                                     button.style.position = 'relative';
-//                                     button.appendChild(tooltipDiv);
-//                                 }
-//                             }
-//                         });
-//                     }
-//                 </script>
-                
-//                 <style>
-//                     .custom-sidebar-tooltip {
-//                         position: absolute;
-//                         left: 100%;
-//                         top: 50%;
-//                         transform: translateY(-50%);
-//                         margin-left: 15px;
-//                         background-color: #002e6eff;
-//                         color: white;
-//                         padding: 10px 14px;
-//                         border-radius: 6px;
-//                         font-size: 13px;
-//                         white-space: nowrap;
-//                         z-index: 9999;
-//                         box-shadow: 0 4px 14px rgba(156, 0, 0, 0.4);
-//                         pointer-events: none;
-//                     }
-                    
-//                     .custom-sidebar-tooltip::before {
-//                         content: '';
-//                         position: absolute;
-//                         right: 100%;
-//                         top: 50%;
-//                         transform: translateY(-50%);
-//                         border: 7px solid transparent;
-//                         border-right-color: #0055cbff;
-//                     }
-//                 </style>
-//             HTML)
-//         );
-// }

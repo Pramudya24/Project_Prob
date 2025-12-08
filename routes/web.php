@@ -27,7 +27,7 @@ Route::get('/', function () {
         return redirect('/monitoring');
     }
 
-    return redirect('/dashboard');
+    return redirect('/opd');
 });
 
 Route::get('/dashboard', function () {

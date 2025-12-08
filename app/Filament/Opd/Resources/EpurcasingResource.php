@@ -97,7 +97,14 @@ class EpurcasingResource extends Resource
                                 'Terintegrasi' => 'Terintegrasi',
                             ])
                             ->native(false),
-
+                        Forms\Components\Select::make('metode_pengadaan')
+                            ->label('Metode Pengadaan')
+                            ->options([
+                                'E-Katalog' => 'E-Katalog',
+                                'Toko Daring' => 'Toko Daring',
+                            ])
+                            ->native(false)
+                            ->required(),
                         Forms\Components\FileUpload::make('summary_report')
                             ->label('Summary Report')
                             ->required()
@@ -107,7 +114,9 @@ class EpurcasingResource extends Resource
                             ->downloadable()
                             ->openable()
                             ->helperText('Upload file JPG/PDF (Max: 5MB)'),
-                    ])
+                    
+                    
+                            ])
                     ->columns(2),
 
                 Forms\Components\Section::make('Nilai Kontrak & Komponen')

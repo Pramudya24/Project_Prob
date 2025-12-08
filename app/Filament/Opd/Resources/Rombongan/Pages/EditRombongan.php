@@ -43,11 +43,6 @@ class EditRombongan extends EditRecord
                         Forms\Components\TextInput::make('nama_rombongan')
                             ->label('Nama Rombongan')
                             ->disabled(),
-
-                        Forms\Components\Textarea::make('keterangan')
-                            ->label('Keterangan')
-                            ->columnSpanFull()
-                            ->disabled(),
                     ])
                     ->columns(1),
 

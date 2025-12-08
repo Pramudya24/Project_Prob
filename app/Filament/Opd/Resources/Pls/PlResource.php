@@ -370,6 +370,7 @@ class PlResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Tambahkan ke Rombongan')
                     ->modalSubmitActionLabel('Tambahkan'),
+                    Tables\Actions\DeleteAction::make(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('jenis_pengadaan')
@@ -381,10 +382,6 @@ class PlResource extends Resource
                         'Jasa Lainnya' => 'Jasa Lainnya',
                         'Terintegrasi' => 'Terintegrasi',
                     ]),
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
