@@ -13,7 +13,7 @@ class EditTender extends EditRecord
     // ✅ TAMBAHKAN INI - Redirect setelah edit
     protected function getRedirectUrl(): string
     {
-        return PlResource::getUrl('index');
+        return TenderResource::getUrl('index');
     }
 
     // ✅ OPSIONAL: Notifikasi sukses edit

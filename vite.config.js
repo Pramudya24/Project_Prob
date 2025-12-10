@@ -7,7 +7,8 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app.js',
-                'resources/css/filament/opd/theme.css', // Tambahkan ini
+                // 'resources/css/filament/opd/theme.css', // Tambahkan ini
+                'resources/css/filament/admin/theme.css'
             ],
             refresh: true,
         }),

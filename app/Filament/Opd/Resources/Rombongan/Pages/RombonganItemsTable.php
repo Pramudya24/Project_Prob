@@ -8,7 +8,13 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use App\Models\RombonganItem;
 use Illuminate\Database\Eloquent\Builder;
+use Livewire\Component;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Concerns\CanPollRecords;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Contracts\View\View;
 
 class RombonganItemsTable extends BaseWidget
 {
@@ -1227,4 +1233,9 @@ class RombonganItemsTable extends BaseWidget
             'refreshAvailableItems' => '$refresh',
         ];
     }
+
+    // public function render():View
+    // {
+    //     return view(static::$view);
+    // }
 }

@@ -14,7 +14,8 @@ class VerifikasiResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
     protected static ?string $navigationLabel = 'Verifikasi';
-    protected static ?int $navigationSort = 4;
+    protected static ?string $pluralModelLabel = 'Verifikasi';
+    protected static ?int $navigationSort = 9;
 
     public static function form(Form $form): Form
     {

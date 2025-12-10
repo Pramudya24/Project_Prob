@@ -18,7 +18,10 @@ class CreateRombongan extends CreateRecord
     {
         $user = auth()->user();
 
-        $data['nama_opd'] = $user->opd_code;  // Langsung ambil dari user
+        $data['status_pengiriman'] = 'Belum Dikirim';        // ← AUTO SET OPD
+        $data['nama_opd'] = auth()->user()->opd_code;       // ← AUTO SET NAMA OPD
+        $data['total_items'] = 0;                           // ← Default 0 item
+        $data['total_nilai'] = 0;     // Langsung ambil dari user
 
         return $data;
     }
@@ -26,5 +29,15 @@ class CreateRombongan extends CreateRecord
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
+    }
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getCreateFormAction()
+                ->label('Simpan'), // Ubah "Create" jadi "Simpan"
+            
+            $this->getCancelFormAction()
+                ->label('Batal'), // Ubah "Cancel" jadi "Batal"
+        ];
     }
 }

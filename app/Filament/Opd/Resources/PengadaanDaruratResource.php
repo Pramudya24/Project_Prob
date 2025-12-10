@@ -20,9 +20,7 @@ class PengadaanDaruratResource extends Resource
 
     protected static ?string $navigationLabel = 'Pencatatan Pengadaan Darurat';
 
-    protected static ?string $navigationGroup = 'Form';
-
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 5;
 
     
 

@@ -12,12 +12,15 @@ use Filament\Forms\Form;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Opd\Resources\Rombongan\Pages\RombonganItemsTable;
+use App\Filament\Opd\Resources\Rombongan\Pages\AvailableItemsTable;
 
 class EditRombongan extends EditRecord
 {
     protected static string $resource = RombonganResource::class;
 
     public $refreshKey = 0;
+    public $activeTab = 'items';
 
     protected function getHeaderActions(): array
     {
@@ -67,19 +70,19 @@ class EditRombongan extends EditRecord
                         Forms\Components\Tabs\Tab::make('Data dalam Rombongan')
                             ->schema([
                                 // ✅ PERBAIKAN: Tambah key yang reactive
-                                Forms\Components\Livewire::make(RombonganItemsTable::class, [
-                                    'rombonganId' => $this->record->id,
-                                ])
-                                    ->key('rombongan-items-' . $this->record->id . '-' . $this->refreshKey),
+                                Forms\Components\View::make('filament.forms.components.rombongan-items-wrapper')
+                                    ->viewData([
+                                        'rombonganId' => $this->record->id,
+                                        'refreshKey' => $this->refreshKey,
+                                    ]),
                             ]),
 
                         Forms\Components\Tabs\Tab::make('Data Tersedia')
                             ->schema([
-                                // ✅ PERBAIKAN: Tambah key yang reactive
-                                Forms\Components\Livewire::make(\App\Filament\Opd\Resources\Rombongan\Pages\AvailableItemsTable::class, [
-                                    'rombonganId' => $this->record->id,
-                                ])
-                                    ->key('available-items-' . $this->record->id . '-' . $this->refreshKey),
+                                Forms\Components\View::make('filament.forms.components.available-items-table-wrapper')
+                                    ->viewData([
+                                        'rombonganId' => $this->record->id,
+                                    ]),
                             ]),
                     ])
                     ->columnSpanFull(),
@@ -92,16 +95,15 @@ class EditRombongan extends EditRecord
         return [
             'refreshRombonganItems' => 'handleRefresh',
             'refreshAvailableItems' => 'handleRefresh',
+            'refreshPage' => '$refresh',
         ];
     }
 
     public function handleRefresh(): void
     {
-        // Increment key untuk force re-render
         $this->refreshKey++;
-        
-        // Reload record untuk update statistik
         $this->record = $this->record->fresh();
+        $this->js('window.location.reload()');
     }
     
     protected function getItemsTable(): Forms\Components\Component

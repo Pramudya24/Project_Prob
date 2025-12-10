@@ -26,11 +26,12 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('')  // ⭐ Path tetap 'opd'
+            ->path('')
             ->login()
             ->colors([
                 'primary' => Color::Blue,
             ])
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
@@ -55,16 +56,37 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            
-            // Navigation items custom kamu
             ->navigationItems([
                 NavigationItem::make('Menu Baru')
                     ->icon('heroicon-o-folder')
                     ->url(fn() => route('filament.admin.pages.menu-baru'))
-                    ->visible(fn() => false), // Set true jika mau ditampilkan
+                    ->visible(fn() => false),
             ])
-            
-            // Render hook untuk tooltips (kalau view-nya ada)
+            // Tambahkan render hook ini untuk custom CSS
+            ->renderHook(
+                'panels::styles.after',
+                fn () => <<<'HTML'
+                <style>
+                    /* Force override warna sidebar */
+                    span.fi-sidebar-item-label.flex-1.truncate.text-sm.font-medium.text-gray-700.dark\:text-gray-200 {
+                        color: #10b981 !important;
+                    }
+                    
+                    .fi-sidebar-item:hover span.fi-sidebar-item-label {
+                        color: #34d399 !important;
+                    }
+                    
+                    .fi-sidebar-item.fi-active span.fi-sidebar-item-label {
+                        color: #3b82f6 !important;
+                    }
+                    
+                    /* Override untuk semua state */
+                    .fi-sidebar-nav span.fi-sidebar-item-label {
+                        color: #10b981 !important;
+                    }
+                </style>
+                HTML
+            )
             ->renderHook(
                 'panels::body.end',
                 fn () => view('filament.hooks.sidebar-tooltips')

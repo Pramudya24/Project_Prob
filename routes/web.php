@@ -4,6 +4,8 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Filament\Verifikator\Resources\RombonganVerifikatorResource\Pages\EditRombonganVerifikator;
 use App\Models\RombonganItem;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Response;
 
 
 Route::get('/', function () {
@@ -140,21 +142,43 @@ Route::post('/verifikator/rombongan-verifikators/verify-all-fields', function ()
     ]);
 })->middleware('auth')->name('verifikator.verify-all-fields');
 
-Route::get('/private-file/{path}', function ($path) {
-    $filePath = storage_path('app/private/' . $path);
+Route::get('/private/{path}', function ($path) {
+    // Decode path
+    $path = urldecode($path);
+    
+    // Path lengkap ke file di storage
+    $fullPath = storage_path('app/private/' . $path);
     
     // Cek apakah file exists
-    if (!file_exists($filePath)) {
-        abort(404, 'File not found');
+    if (!file_exists($fullPath)) {
+        \Log::error('File not found:', ['path' => $fullPath, 'requested' => $path]);
+        abort(404, "File tidak ditemukan: $path");
     }
     
-    // Get mime type
-    $mimeType = mime_content_type($filePath);
+    // Get extension
+    $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
     
-    // Return file dengan headers yang benar
-    return response()->file($filePath, [
-        'Content-Type' => $mimeType,
-        'Cache-Control' => 'public, max-age=31536000', // Cache 1 tahun
-    ]);
-})->where('path', '.*')->name('private.file');
+    // Mime types untuk preview
+    $mimeTypes = [
+        'pdf' => 'application/pdf',
+        'png' => 'image/png',
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+        'svg' => 'image/svg+xml',
+        'bmp' => 'image/bmp',
+    ];
+    
+    // Set headers
+    $headers = [
+        'Content-Type' => $mimeTypes[$extension] ?? mime_content_type($fullPath),
+        'Content-Disposition' => 'inline; filename="' . basename($path) . '"',
+        'Cache-Control' => 'public, max-age=604800',
+    ];
+    
+    return response()->file($fullPath, $headers);
+})->where('path', '.*')  // ✅ TERIMA SEMUA PATH (termasuk subfolder)
+    ->middleware(['auth'])
+    ->name('private.file');
 require __DIR__ . '/auth.php';

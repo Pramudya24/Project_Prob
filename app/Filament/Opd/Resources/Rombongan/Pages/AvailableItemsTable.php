@@ -2,8 +2,7 @@
 
 namespace App\Filament\Opd\Resources\Rombongan\Pages;
 
-use Filament\Tables;
-use Filament\Tables\Table;
+use Filament\Widgets\Widget;
 use App\Models\Pl;
 use App\Models\Tender;
 use App\Models\Epurcasing;
@@ -11,16 +10,12 @@ use App\Models\Swakelola;
 use App\Models\Nontender;
 use App\Models\PengadaanDarurat;
 use App\Models\Rombongan;
-use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Support\Collection;
 
-class AvailableItemsTable extends BaseWidget
+class AvailableItemsTable extends Widget
 {
+    protected static string $view = 'filament.widgets.available-items-table';
     public int $rombonganId;
-
-    protected static ?string $heading = 'Data Tersedia';
-
-    protected int | string | array $columnSpan = 'full';
 
     // Mapping type alias ke class name
     protected array $typeMap = [
@@ -30,17 +25,7 @@ class AvailableItemsTable extends BaseWidget
         'swakelola' => Swakelola::class,
         'nontender' => Nontender::class,
         'pengadaan_darurat' => PengadaanDarurat::class,
-    ];
-
-    public function table(Table $table): Table
-    {
-        return $table
-            ->query(Pl::query()->whereRaw('1=0'))
-            ->columns($this->getTableColumns())
-            ->emptyStateHeading('Tidak ada data tersedia')
-            ->emptyStateDescription('Silakan tambahkan data terlebih dahulu.')
-            ->emptyStateIcon('heroicon-o-document');
-    }
+    ];  
 
     protected function loadRecords(): Collection
     {
@@ -95,15 +80,6 @@ class AvailableItemsTable extends BaseWidget
 
         return $collection;
     }
-
-    public function render(): \Illuminate\Contracts\View\View
-    {
-        return view('filament.widgets.available-items-table', [
-            'records' => $this->loadRecords(),
-            'rombonganId' => $this->rombonganId,
-        ]);
-    }
-
     /**
      * Action untuk tambah ke rombongan
      */
@@ -161,23 +137,19 @@ class AvailableItemsTable extends BaseWidget
         }
     }
 
-    protected function getTableColumns(): array
-    {
-        return [
-            Tables\Columns\TextColumn::make('item_label')->label('Jenis Data'),
-            Tables\Columns\TextColumn::make('nama_pekerjaan')->label('Nama Pekerjaan'),
-            Tables\Columns\TextColumn::make('kode_rup')->label('Kode RUP'),
-            Tables\Columns\TextColumn::make('pagu_rup')->label('Pagu RUP'),
-            Tables\Columns\TextColumn::make('nilai_kontrak')->label('Nilai Kontrak'),
-            Tables\Columns\TextColumn::make('created_at')->label('Dibuat'),
-        ];
-    }
-
     protected function getListeners(): array
     {
         return [
             'refreshAvailableItems' => '$refresh',
             'refreshRombonganItems' => '$refresh',
+        ];
+    }
+
+    protected function getViewData(): array
+    {
+        return [
+            'records' => $this->loadRecords(),
+            'rombonganId' => $this->rombonganId,
         ];
     }
 }

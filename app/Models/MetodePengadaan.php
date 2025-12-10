@@ -8,7 +8,8 @@ enum MetodePengadaan: string
     case PENGADAAN_LANGSUNG = 'Pengadaan Langsung';
     case PENUNJUKAN_LANGSUNG = 'Penunjukan Langsung';
     case EPENUNJUKAN_LANGSUNG = 'EPenunjukan Langsung';
-
+    case TOKO_DARING = 'Toko Daring';
+    case EKATALOG = 'E-Katalog';
     // Helper untuk ambil semua values
     public static function values(): array
     {
@@ -20,6 +21,9 @@ enum MetodePengadaan: string
             self::Dikecualikan => 'Dikecualikan',
             self::PengadaanLangsung => 'Pengadaan Langsung',
             self::PenunjukanLangsung => 'Penunjukan Langsung',
+            self::EPENUNJUKAN_LANGSUNG => 'EPenunjukan Langsung',
+            self::TokoDaring => 'Toko Daring',
+            self::Ekatalog => 'E-Katalog',
         };
     }
 
@@ -30,7 +34,9 @@ enum MetodePengadaan: string
             self::DIKECUALIKAN->value => 'Dikecualikan',
             self::PENGADAAN_LANGSUNG->value => 'Pengadaan Langsung',
             self::PENUNJUKAN_LANGSUNG->value => 'Penunjukan Langsung',
-            self::EPENUNJUKAN_LANGSUNG->value => 'E-Penunjukan Langsung',
+            self::EPENUNJUKAN_LANGSUNG->value => 'EPenunjukan Langsung',
+            self::TOKO_DARING->value => 'Toko Daring',
+            self::EKATALOG->value => 'E-Katalog',
         ];
     }
     public static function fromNullable(?string $value): ?self

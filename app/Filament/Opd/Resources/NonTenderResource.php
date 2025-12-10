@@ -20,10 +20,7 @@ class NonTenderResource extends Resource
 
     protected static ?string $navigationLabel = 'Pencatatan Non Tender';
 
-    protected static ?string $navigationGroup = 'Form';
-
-
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     
     public static function getModelLabel(): string

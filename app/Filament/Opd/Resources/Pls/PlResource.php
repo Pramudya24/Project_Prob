@@ -21,9 +21,9 @@ class PlResource extends Resource
 
     protected static ?string $navigationLabel = 'Non Tender';
 
-    protected static ?string $navigationGroup = 'Form';
+    
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 3;
 
     
 
@@ -98,8 +98,8 @@ class PlResource extends Resource
                         Forms\Components\Select::make('metode_pengadaan')
                             ->label('Metode Pengadaan')
                             ->options([
-                                'E-Pengadaan Langsung' => 'E-Pengadaan Langsung',
-                                'E-Penunjukan Langsung' => 'E-Penunjukan Langsung',
+                                'EPengadaan Langsung' => 'E-Pengadaan Langsung',
+                                'EPenunjukan Langsung' => 'E-Penunjukan Langsung',
                             ])
                             ->native(false)
                             ->required(),

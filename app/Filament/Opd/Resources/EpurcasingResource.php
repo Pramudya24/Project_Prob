@@ -21,10 +21,8 @@ class EpurcasingResource extends Resource
 
     protected static ?string $navigationLabel = 'Epurcasing';
 
-    protected static ?string $navigationGroup = 'Form';
 
-
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 2;
 
 
     

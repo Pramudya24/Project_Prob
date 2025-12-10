@@ -1,0 +1,36 @@
+@import '/vendor/filament/filament/resources/css/theme.css';
+
+@config 'tailwind.config.js';
+
+.fi-simple-layout {
+    background: red !important;
+}
+
+/* Target class yang terlihat di inspect element */
+span.fi-sidebar-item-label {
+    --tw-text-opacity: 1 !important;
+    color: rgb(16 185 129) !important; /* Hijau - ganti sesuai keinginan */
+}
+
+/* Hover state */
+.fi-sidebar-item:hover span.fi-sidebar-item-label {
+    color: rgb(52 211 153) !important; /* Hijau lebih terang */
+}
+
+/* Active state - Dashboard yang sedang aktif */
+.fi-sidebar-item.fi-active span.fi-sidebar-item-label {
+    color: rgb(59 130 246) !important; /* Biru untuk yang aktif */
+}
+
+/* Override Tailwind dark mode classes */
+.dark span.fi-sidebar-item-label {
+    color: rgb(16 185 129) !important;
+}
+
+.dark .fi-sidebar-item:hover span.fi-sidebar-item-label {
+    color: rgb(52 211 153) !important;
+}
+
+.dark .fi-sidebar-item.fi-active span.fi-sidebar-item-label {
+    color: rgb(59 130 246) !important;
+}

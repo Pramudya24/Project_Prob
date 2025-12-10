@@ -104,9 +104,16 @@ class RombonganItem extends Model
             'updated_at', 
             'deleted_at',
             'user_id',
+            'rombongans',
+            'nama_opd',    
+            'tanggal_dibuat', 
         ];
 
-        $allFields = array_keys($item->toArray());
+        // ✅ FIX: Pakai $fillable + $casts untuk mendapatkan SEMUA field
+        $allFields = array_unique(array_merge(
+            $item->getFillable(),
+            array_keys($item->getCasts())
+        ));
         
         return array_diff($allFields, $excludedFields);
     }
@@ -116,70 +123,129 @@ class RombonganItem extends Model
      */
     public function getVerificationProgress()
     {
-        $fieldVerifications = $this->fieldVerifications;
+        // ✅ FIX: Hitung SEMUA field yang bisa diverifikasi (bukan hanya yang ada record)
+        $verifiableFields = $this->getVerifiableFields();
+        $total = count($verifiableFields);
         
-        $total = $fieldVerifications->count();
-        $verified = $fieldVerifications->where('is_verified', true)->count();
+        // Hitung yang sudah diverifikasi
+        $verified = 0;
+        
+        foreach ($verifiableFields as $field) {
+            $verification = $this->getFieldVerification($field);
+            if ($verification && $verification->is_verified) {
+                $verified++;
+            }
+        }
         
         $percentage = $total > 0 ? ($verified / $total) * 100 : 0;
         
         return [
             'total' => $total,
             'verified' => $verified,
-            'percentage' => (int) round($percentage), // CAST ke integer
+            'percentage' => (int) round($percentage),
         ];
     }
 
-    /**
-     * Get all fields with verification status
-     * UPDATED: Now handles Enum properly
-     */
+    // Tambahkan di RombonganItem.php
+    public function initializeAllFieldVerifications(): void 
+    {
+        $verifiableFields = $this->getVerifiableFields();
+        
+        foreach ($verifiableFields as $field) {
+            $this->fieldVerifications()->firstOrCreate(
+                ['field_name' => $field],
+                [
+                    'is_verified' => false,
+                    'verified_at' => null,
+                    'verified_by' => null,
+                    'keterangan' => null,
+                ]
+            );
+        }
+    }
+    
     public function getFieldsWithVerificationStatus(): array
     {
         $item = $this->item;
         if (!$item) return [];
 
-        $fields = $this->getVerifiableFields();
+        // Ambil SEMUA field termasuk paten
+        $allFields = array_unique(array_merge(
+            $item->getFillable(),
+            array_keys($item->getCasts())
+        ));
+        
+        // ✅ FIELD YANG TIDAK PERLU DITAMPILKAN SAMA SEKALI
+        $hiddenFields = [
+            'id', 
+            'user_id', 
+            'rombongans',
+            'created_at',    // ← Tambah
+            'updated_at',    // ← Tambah  
+            'deleted_at',    // ← INI YANG HARUS DITAMBAH!
+        ];
+        
+        $fields = array_diff($allFields, $hiddenFields);
+        
         $result = [];
 
         foreach ($fields as $field) {
-            $verification = $this->getFieldVerification($field);
+            // Tentukan apakah field ini paten (tidak ada checkbox)
+            $isPatenField = in_array($field, ['nama_opd', 'tanggal_dibuat']);
+            
+            // Untuk field paten, tidak perlu ambil verification
+            if ($isPatenField) {
+                $verification = null;
+                $isVerified = true; // Auto verified karena paten
+            } else {
+                $verification = $this->getFieldVerification($field);
+                $isVerified = $verification ? $verification->is_verified : false;
+            }
             
             // Ambil value dari field
             $value = $item->$field ?? '-';
             
-            // PENTING: Handle Enum (BackedEnum)
+            // Handle Enum (BackedEnum)
             if ($value instanceof \BackedEnum) {
                 $value = $value->value;
             }
             
-            // Handle object lain (kecuali Carbon untuk tanggal)
+            // Handle object lain
             if (is_object($value) && !($value instanceof \Carbon\Carbon)) {
-                if (method_exists($value, '__toString')) {
-                    $value = (string) $value;
-                } else {
-                    // Log warning untuk debugging
-                    \Log::warning('Cannot convert object to string in RombonganItem', [
-                        'field' => $field,
-                        'class' => get_class($value),
-                        'item_type' => get_class($item),
-                        'item_id' => $item->id,
-                    ]);
-                    $value = '-';
-                }
+                $value = method_exists($value, '__toString') ? (string) $value : '-';
+            }
+            
+            // Handle nilai NULL
+            if ($value === null || $value === '') {
+                $value = '-';
             }
             
             $result[] = [
                 'field_name' => $field,
                 'field_label' => $this->getFieldLabel($field),
                 'field_value' => $value,
-                'is_verified' => $verification ? $verification->is_verified : false,
+                'is_verified' => $isVerified,
+                'is_paten' => $isPatenField,
                 'verification_id' => $verification?->id,
                 'keterangan' => $verification?->keterangan,
             ];
         }
 
         return $result;
+    }
+
+    public function getPatenFields(): array
+    {
+        return [
+            'nama_opd',
+            'tanggal_dibuat',
+            // Tambah field paten lain jika perlu
+        ];
+    }
+
+    public function isPatenField(string $fieldName): bool
+    {
+        return in_array($fieldName, $this->getPatenFields());
     }
 
     /**
