@@ -6,6 +6,7 @@ use App\Filament\Opd\Resources\Rombongan\RombonganResource;
 use App\Models\Rombongan;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Notifications\Notification;
 
 class ListRombongans extends ListRecords
 {
@@ -14,20 +15,45 @@ class ListRombongans extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()
+            Actions\Action::make('create')
                 ->label('New Rombongan')
+                ->color('primary')
                 ->action(function () {
-                    $lastRombongan = Rombongan::orderBy('id', 'desc')->first();
-                    $nextNumber = $lastRombongan ? intval(str_replace('Rombongan ', '', $lastRombongan->nama_rombongan)) + 1 : 1;
+                    $user = auth()->user();
+
+                    // Auto-generate nama rombongan berdasarkan OPD
+                    $lastRombongan = Rombongan::where('nama_opd', $user->opd_code)
+                        ->latest('id')
+                        ->first();
                     
-                    $rombongan = Rombongan::create([
-                        'kode_rombongan' => 'ROMB-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT),
-                        'nama_rombongan' => 'Rombongan ' . $nextNumber,
-                        'deskripsi' => 'Deskripsi rombongan ' . $nextNumber,
-                        'status' => true,
+                    if ($lastRombongan) {
+                        // Ambil nomor dari format "Rombongan-001"
+                        preg_match('/Rombongan-(\d+)/', $lastRombongan->nama_rombongan, $matches);
+                        $nextNumber = isset($matches[1]) ? (intval($matches[1]) + 1) : 1;
+                    } else {
+                        $nextNumber = 1;
+                    }
+                    
+                    $namaRombongan = 'Rombongan-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+
+                    // Create rombongan baru
+                    Rombongan::create([
+                        'nama_rombongan' => $namaRombongan,
+                        'status_pengiriman' => 'Belum Dikirim',
+                        'nama_opd' => $user->opd_code,
+                        'total_items' => 0,
+                        'total_nilai' => 0,
                     ]);
+
+                    // Notifikasi sukses
+                    Notification::make()
+                        ->title('Rombongan Berhasil Dibuat')
+                        ->body("Rombongan baru \"{$namaRombongan}\" telah dibuat.")
+                        ->success()
+                        ->send();
                     
-                    return redirect(RombonganResource::getUrl('index'));
+                    // Refresh halaman
+                    $this->redirect(static::getResource()::getUrl('index'));
                 }),
         ];
     }

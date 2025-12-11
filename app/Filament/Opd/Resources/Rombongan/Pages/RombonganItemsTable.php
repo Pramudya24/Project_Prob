@@ -29,6 +29,7 @@ class RombonganItemsTable extends BaseWidget
                 fn(): Builder => RombonganItem::where('rombongan_id', $this->rombonganId)
                     ->with(['item'])
             )
+            // ->poll('1s') // ✅ TAMBAHKAN INI - Auto refresh setiap 3 detik
             ->columns([
                 Tables\Columns\TextColumn::make('item_type')
                     ->label('Jenis Data')
@@ -116,6 +117,13 @@ class RombonganItemsTable extends BaseWidget
             ->emptyStateActions([
             ])
             ->striped();
+    }
+    protected function getListeners(): array
+    {
+        return [
+            'refreshRombonganItems' => '$refresh',
+            'refreshAvailableItems' => '$refresh',
+        ];
     }
 
     private function getEditFormSchema($record): array
@@ -1226,13 +1234,7 @@ class RombonganItemsTable extends BaseWidget
         };
     }
 
-    protected function getListeners(): array
-    {
-        return [
-            'refreshRombonganItems' => '$refresh',
-            'refreshAvailableItems' => '$refresh',
-        ];
-    }
+    
 
     // public function render():View
     // {

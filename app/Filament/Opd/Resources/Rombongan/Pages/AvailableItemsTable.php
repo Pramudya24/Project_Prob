@@ -84,58 +84,60 @@ class AvailableItemsTable extends Widget
      * Action untuk tambah ke rombongan
      */
     public function addToRombongan(string $typeAlias, int $itemId): void
-    {
-        // Convert alias ke full class name
-        $itemType = $this->typeMap[$typeAlias] ?? null;
+{
+    // Convert alias ke full class name
+    $itemType = $this->typeMap[$typeAlias] ?? null;
 
-        if (!$itemType) {
-            \Filament\Notifications\Notification::make()
-                ->title('Error')
-                ->body('Tipe item tidak valid: ' . $typeAlias)
-                ->danger()
-                ->send();
-            return;
-        }
-
-        $rombongan = Rombongan::find($this->rombonganId);
-
-        if (!$rombongan) {
-            \Filament\Notifications\Notification::make()
-                ->title('Error')
-                ->body('Rombongan tidak ditemukan')
-                ->danger()
-                ->send();
-            return;
-        }
-
-        try {
-            $result = $rombongan->addItem($itemType, $itemId);
-
-            if ($result) {
-                \Filament\Notifications\Notification::make()
-                    ->title('Berhasil!')
-                    ->body('Data berhasil ditambahkan ke rombongan')
-                    ->success()
-                    ->send();
-
-                // Dispatch ke parent page (EditRombongan) untuk refresh semua
-                $this->dispatch('refreshRombonganItems');
-                $this->dispatch('refreshAvailableItems');
-            } else {
-                \Filament\Notifications\Notification::make()
-                    ->title('Peringatan')
-                    ->body('Data sudah ada dalam rombongan')
-                    ->warning()
-                    ->send();
-            }
-        } catch (\Exception $e) {
-            \Filament\Notifications\Notification::make()
-                ->title('Error')
-                ->body('Terjadi kesalahan: ' . $e->getMessage())
-                ->danger()
-                ->send();
-        }
+    if (!$itemType) {
+        \Filament\Notifications\Notification::make()
+            ->title('Error')
+            ->body('Tipe item tidak valid: ' . $typeAlias)
+            ->danger()
+            ->send();
+        return;
     }
+
+    $rombongan = Rombongan::find($this->rombonganId);
+
+    if (!$rombongan) {
+        \Filament\Notifications\Notification::make()
+            ->title('Error')
+            ->body('Rombongan tidak ditemukan')
+            ->danger()
+            ->send();
+        return;
+    }
+
+    try {
+        $result = $rombongan->addItem($itemType, $itemId);
+
+        if ($result) {
+            // ✅ REFRESH KEDUA TABLE
+            $this->dispatch('refreshRombonganItems');
+            $this->dispatch('refreshAvailableItems');
+            
+            // ✅ NOTIFIKASI
+            \Filament\Notifications\Notification::make()
+                ->title('Berhasil!')
+                ->body('Data berhasil ditambahkan ke rombongan')
+                ->success()
+                ->send();
+                $this->js('window.location.reload()');
+        } else {
+            \Filament\Notifications\Notification::make()
+                ->title('Peringatan')
+                ->body('Data sudah ada dalam rombongan')
+                ->warning()
+                ->send();
+        }
+    } catch (\Exception $e) {
+        \Filament\Notifications\Notification::make()
+            ->title('Error')
+            ->body('Terjadi kesalahan: ' . $e->getMessage())
+            ->danger()
+            ->send();
+    }
+}
 
     protected function getListeners(): array
     {

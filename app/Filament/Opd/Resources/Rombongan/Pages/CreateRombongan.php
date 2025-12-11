@@ -4,7 +4,7 @@ namespace App\Filament\Opd\Resources\Rombongan\Pages;
 
 use App\Filament\Opd\Resources\Rombongan\RombonganResource;
 use Filament\Resources\Pages\CreateRecord;
-use App\Models\Opd;
+use App\Models\Rombongan;
 
 class CreateRombongan extends CreateRecord
 {
@@ -12,16 +12,30 @@ class CreateRombongan extends CreateRecord
     protected ?string $heading = 'Tambah Pengajuan';
 
     /**
-     * Mengisi otomatis nama_opd berdasarkan user login (OPD)
+     * Mengisi otomatis nama_opd dan nama_rombongan
      */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $user = auth()->user();
 
-        $data['status_pengiriman'] = 'Belum Dikirim';        // ← AUTO SET OPD
-        $data['nama_opd'] = auth()->user()->opd_code;       // ← AUTO SET NAMA OPD
-        $data['total_items'] = 0;                           // ← Default 0 item
-        $data['total_nilai'] = 0;     // Langsung ambil dari user
+        // Auto-generate nama rombongan
+        $lastRombongan = Rombongan::where('nama_opd', $user->opd_code)
+            ->latest('id')
+            ->first();
+        
+        if ($lastRombongan) {
+            // Ambil nomor terakhir dari format "Rombongan-001"
+            preg_match('/Rombongan-(\d+)/', $lastRombongan->nama_rombongan, $matches);
+            $nextNumber = isset($matches[1]) ? (intval($matches[1]) + 1) : 1;
+        } else {
+            $nextNumber = 1;
+        }
+        
+        $data['nama_rombongan'] = 'Rombongan-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        $data['status_pengiriman'] = 'Belum Dikirim';
+        $data['nama_opd'] = $user->opd_code;
+        $data['total_items'] = 0;
+        $data['total_nilai'] = 0;
 
         return $data;
     }
@@ -30,14 +44,15 @@ class CreateRombongan extends CreateRecord
     {
         return $this->getResource()::getUrl('index');
     }
+    
     protected function getFormActions(): array
     {
         return [
             $this->getCreateFormAction()
-                ->label('Simpan'), // Ubah "Create" jadi "Simpan"
+                ->label('Simpan'),
             
             $this->getCancelFormAction()
-                ->label('Batal'), // Ubah "Cancel" jadi "Batal"
+                ->label('Batal'),
         ];
     }
 }

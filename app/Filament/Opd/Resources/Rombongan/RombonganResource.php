@@ -21,17 +21,28 @@ class RombonganResource extends Resource
     protected static ?int $navigationSort = 8;
 
     public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('nama_rombongan')
-                    ->label('Nama Rombongan')
-                    ->required()
-                    ->unique(ignoreRecord: true)
-                    ->maxLength(255)
-                    ->placeholder('Masukkan nama rombongan'),
-            ]);
-    }
+{
+    return $form
+        ->schema([
+            Forms\Components\Hidden::make('nama_rombongan')
+                ->default(function () {
+                    $user = auth()->user();
+                    $lastRombongan = \App\Models\Rombongan::where('nama_opd', $user->opd_code)
+                        ->latest('id')
+                        ->first();
+                    
+                    if ($lastRombongan) {
+                        // Ambil nomor terakhir dari format "Rombongan-001"
+                        preg_match('/Rombongan-(\d+)/', $lastRombongan->nama_rombongan, $matches);
+                        $nextNumber = isset($matches[1]) ? (intval($matches[1]) + 1) : 1;
+                    } else {
+                        $nextNumber = 1;
+                    }
+                    
+                    return 'Rombongan-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+                }),
+        ]);
+}
 
     public static function table(Table $table): Table
     {
@@ -141,7 +152,7 @@ class RombonganResource extends Resource
     {
         return [
             'index' => Pages\ListRombongans::route('/'),
-            'create' => Pages\CreateRombongan::route('/create'),
+            // 'create' => Pages\CreateRombongan::route('/create'),
             'edit' => Pages\EditRombongan::route('/{record}/edit'),
             'view' => Pages\ViewRombongan::route('/{record}'),
         ];
