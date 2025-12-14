@@ -30,8 +30,9 @@ class VerifikasiResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListVerifikasis::route('/'), // ← Tambahkan ini biar ada halaman index
+            'index' => Pages\ListVerifikasis::route('/'),
             'data-progres' => Pages\DataProgres::route('/data-progres'),
+            'edit-data-progres' => Pages\EditDataProgres::route('/data-progres/{record}/edit'), // ✅ ROUTE EDIT
             'data-sudah-progres' => Pages\DataSudahProgres::route('/data-sudah-progres'),
             'data-akhir' => Pages\DataAkhir::route('/data-akhir'),
         ];

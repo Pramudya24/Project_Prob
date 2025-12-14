@@ -103,12 +103,12 @@ class EpurcasingResource extends Resource
                             ])
                             ->native(false)
                             ->required(),
-                        Forms\Components\FileUpload::make('summary_report')
-                            ->label('Summary Report')
+                        Forms\Components\FileUpload::make('surat_pesanan')
+                            ->label('Surat Pesanan')
                             ->required()
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
                             ->maxSize(5120)
-                            ->directory('summary-reports')
+                            ->directory('surat_pesanan')
                             ->downloadable()
                             ->openable()
                             ->helperText('Upload file JPG/PDF (Max: 5MB)'),
@@ -269,7 +269,7 @@ class EpurcasingResource extends Resource
 
                 Forms\Components\Section::make('Status Pekerjaan')
                     ->schema([
-                        Forms\Components\Select::make('serah_terima_pekerjaan')
+                        Forms\Components\Select::make('serah_terima')
                             ->label('Serah Terima Pekerjaan')
                             ->required()
                             ->options([
@@ -294,7 +294,6 @@ class EpurcasingResource extends Resource
 
                         Forms\Components\Select::make('penilaian_kinerja')
                             ->label('Penilaian Kinerja')
-                            ->required()
                             ->default('-')
                             ->native(false)
                             ->disabled(), // Menonaktifkan field

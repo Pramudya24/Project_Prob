@@ -25,6 +25,7 @@ class VerifikatorPanelProvider extends PanelProvider
         return $panel
             ->id('verifikator')
             ->path('verifikator')
+            ->brandName('SIVERA')
             ->login()
             ->colors([
                 'primary' => Color::Green,

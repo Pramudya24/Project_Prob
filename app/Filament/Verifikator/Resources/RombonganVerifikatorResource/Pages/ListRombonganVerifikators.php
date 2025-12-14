@@ -9,11 +9,14 @@ use Filament\Actions;
 use Filament\Forms;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
+use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
 
 class ListRombonganVerifikators extends ListRecords
 {
     protected static string $resource = RombonganVerifikatorResource::class;
+
+     protected static ?string $pollingInterval = '5s';
 
     public string $opdSelected = '';
 
@@ -69,5 +72,23 @@ class ListRombonganVerifikators extends ListRecords
         return $model::query()
             ->where('nama_opd', $this->opdSelected)
             ->where('status_pengiriman', '!=', 'Belum Dikirim');
+    }
+
+    protected function getListeners(): array
+    {
+        return [
+            'rombongan-updated' => 'refreshTable',
+        ];
+    }
+
+    public function refreshTable(): void
+    {
+        // Trigger notification
+        Notification::make()
+            ->title('🔄 Data Baru Masuk')
+            ->body('Ada data rombongan yang baru dikirim dari OPD.')
+            ->success()
+            ->duration(5000)
+            ->send();
     }
 }

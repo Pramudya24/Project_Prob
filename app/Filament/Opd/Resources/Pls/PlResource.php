@@ -333,10 +333,6 @@ class PlResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-
-                // ACTION TAMBAH KE ROMBONGAN
-                // GANTI action yang pakai syncWithoutDetaching dengan:
-
                 Tables\Actions\Action::make('add_to_rombongan')
                     ->label('Tambahkan ke Rombongan')
                     ->icon('heroicon-o-plus-circle')

@@ -6,6 +6,7 @@ use App\Filament\Verifikator\Resources\RombonganVerifikatorResource\Pages\EditRo
 use App\Models\RombonganItem;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Response;
+use App\Http\Controllers\SaveRombonganItemController;
 
 
 Route::get('/', function () {
@@ -182,3 +183,11 @@ Route::get('/private/{path}', function ($path) {
     ->middleware(['auth'])
     ->name('private.file');
 require __DIR__ . '/auth.php';
+
+Route::middleware(['auth', 'role:opd'])->prefix('opd')->group(function () {
+    Route::post('/rombongan-items/update-field', [SaveRombonganItemController::class, 'updateField'])
+        ->name('opd.rombongan-items.update-field');
+    
+    Route::post('/rombongan-items/bulk-update', [SaveRombonganItemController::class, 'bulkUpdate'])
+        ->name('opd.rombongan-items.bulk-update');
+});

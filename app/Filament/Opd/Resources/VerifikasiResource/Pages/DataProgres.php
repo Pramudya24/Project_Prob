@@ -7,7 +7,7 @@ use App\Models\Rombongan;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Resources\Pages\Page;
-use Filament\Tables\Concerns\InteractsWithTable; // ← GANTI INI (hapus "Pages\")
+use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Notifications\Notification;
@@ -27,11 +27,6 @@ class DataProgres extends Page implements HasTable
     
     public function table(Table $table): Table
     {
-        // Debug
-        \Log::info('User OPD:', [
-            'user_id' => auth()->id(),
-            'nama_opd' => auth()->user()->nama_opd ?? 'NULL',
-        ]);
         return $table
             ->query(
                 Rombongan::query()
@@ -46,21 +41,16 @@ class DataProgres extends Page implements HasTable
                     ->sortable()
                     ->description(fn($record) => 'Total: ' . $record->total_items . ' item'),
                     
-                Tables\Columns\TextColumn::make('verification_progress')
-                    ->label('Progress Verifikasi')
-                    ->getStateUsing(function ($record) {
-                        $progress = $record->getVerificationProgress();
-                        return $progress['verified'] . '/' . $progress['total'] . 
-                               ' (' . $progress['percentage'] . '%)';
-                    })
-                    ->badge()
-                    ->color('warning'),
-                    
-                Tables\Columns\TextColumn::make('keterangan_verifikasi')
-                    ->label('Catatan Verifikator')
-                    ->limit(50)
-                    ->wrap()
-                    ->tooltip(fn($record) => $record->keterangan_verifikasi),
+                // ❌ HAPUS PROGRESS BAR
+                // Tables\Columns\TextColumn::make('verification_progress')
+                //     ->label('Progress Verifikasi')
+                //     ->getStateUsing(function ($record) {
+                //         $progress = $record->getVerificationProgress();
+                //         return $progress['verified'] . '/' . $progress['total'] . 
+                //                ' (' . $progress['percentage'] . '%)';
+                //     })
+                //     ->badge()
+                //     ->color('warning'),
                     
                 Tables\Columns\TextColumn::make('tanggal_verifikasi')
                     ->label('Dikembalikan Tanggal')
@@ -74,20 +64,13 @@ class DataProgres extends Page implements HasTable
                     ->placeholder('-'),
             ])
             ->actions([
-                Tables\Actions\Action::make('lihat_detail')
-                    ->label('Lihat Detail')
-                    ->icon('heroicon-o-eye')
-                    ->color('info')
-                    ->modalHeading(fn($record) => 'Detail: ' . $record->nama_rombongan)
-                    ->modalContent(fn($record) => view('filament.opd.components.detail-verifikasi', ['record' => $record]))
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Tutup'),
-                    
-                // Tables\Actions\EditAction::make()
-                //     ->label('Perbaiki Data')
-                //     ->icon('heroicon-o-wrench')
-                //     ->color('warning')
-                //     ->url(fn($record) => route('filament.opd.resources.rombongans.edit', $record)),
+                // ✅ TOMBOL EDIT
+                Tables\Actions\Action::make('edit')
+                    ->label('Edit')
+                    ->icon('heroicon-o-pencil-square')
+                    ->color('warning')
+                    ->url(fn($record) => VerifikasiResource::getUrl('edit-data-progres', ['record' => $record]))
+                    ->tooltip('Edit dan perbaiki data sesuai catatan verifikator'),
                     
                 Tables\Actions\Action::make('kirim_ulang')
                     ->label('Kirim Ulang')
