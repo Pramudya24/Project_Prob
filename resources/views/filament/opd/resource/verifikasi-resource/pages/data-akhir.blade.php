@@ -4,7 +4,6 @@
             <x-heroicon-o-archive-box class="w-6 h-6 text-primary-600" />
             <div>
                 <h3 class="font-semibold text-primary-800 dark:text-primary-200">Data Final</h3>
-                <p class="text-sm text-primary-600 dark:text-primary-300">Data final yang sudah selesai diverifikasi dan siap untuk arsip.</p>
             </div>
         </div>
     </div>

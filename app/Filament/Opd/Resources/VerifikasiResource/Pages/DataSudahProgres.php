@@ -70,14 +70,14 @@ class DataSudahProgres extends Page implements HasTable
                     ->sortable(),
             ])
             ->actions([
-                Tables\Actions\Action::make('lihat_detail')
-                    ->label('Lihat Detail')
-                    ->icon('heroicon-o-eye')
-                    ->color('success')
-                    ->modalHeading(fn($record) => 'Detail: ' . $record->nama_rombongan)
-                    ->modalContent(fn($record) => view('filament.opd.components.detail-verifikasi-lolos', ['record' => $record]))
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Tutup'),
+                // Tables\Actions\Action::make('lihat_detail')
+                //     ->label('Lihat Detail')
+                //     ->icon('heroicon-o-eye')
+                //     ->color('success')
+                //     ->modalHeading(fn($record) => 'Detail: ' . $record->nama_rombongan)
+                //     ->modalContent(fn($record) => view('filament.opd.components.detail-verifikasi-lolos', ['record' => $record]))
+                //     ->modalSubmitAction(false)
+                //     ->modalCancelActionLabel('Tutup'),
                     
                 Tables\Actions\Action::make('kirim_ke_data_akhir')
                     ->label('Kirim ke Data Akhir')

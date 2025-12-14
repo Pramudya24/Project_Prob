@@ -32,7 +32,7 @@ class DataAkhir extends Page implements HasTable
                 Rombongan::query()
                     ->where('status_pengiriman', 'Data Akhir')
                     ->where('nama_opd', auth()->user()->opd_code)
-                    ->orderBy('tanggal_finalisasi', 'desc')
+                    ->orderBy('tanggal_verifikasi', 'desc')
             )
             ->columns([
                 Tables\Columns\TextColumn::make('nama_rombongan')
@@ -57,39 +57,32 @@ class DataAkhir extends Page implements HasTable
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
                     
-                Tables\Columns\TextColumn::make('tanggal_finalisasi')
-                    ->label('Tanggal Finalisasi')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable()
-                    ->badge()
-                    ->color('primary'),
-                    
                 Tables\Columns\TextColumn::make('verifikator.name')
                     ->label('Verifikator')
                     ->placeholder('-'),
             ])
             ->actions([
-                Tables\Actions\Action::make('lihat_detail')
-                    ->label('Lihat Detail')
-                    ->icon('heroicon-o-eye')
-                    ->color('primary')
-                    ->modalHeading(fn($record) => 'Detail Final: ' . $record->nama_rombongan)
-                    ->modalContent(fn($record) => view('filament.opd.components.detail-data-akhir', ['record' => $record]))
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Tutup'),
+                // Tables\Actions\Action::make('lihat_detail')
+                //     ->label('Lihat Detail')
+                //     ->icon('heroicon-o-eye')
+                //     ->color('primary')
+                //     ->modalHeading(fn($record) => 'Detail Final: ' . $record->nama_rombongan)
+                //     ->modalContent(fn($record) => view('filament.opd.components.detail-data-akhir', ['record' => $record]))
+                //     ->modalSubmitAction(false)
+                //     ->modalCancelActionLabel('Tutup'),
                     
-                Tables\Actions\Action::make('export_pdf')
-                    ->label('Export PDF')
-                    ->icon('heroicon-o-document-arrow-down')
-                    ->color('danger')
-                    ->action(function ($record) {
-                        // Implementasi export PDF
-                        Notification::make()
-                            ->title('PDF sedang diproses')
-                            ->body('File akan diunduh sebentar lagi.')
-                            ->info()
-                            ->send();
-                    }),
+                // Tables\Actions\Action::make('export_pdf')
+                //     ->label('Export PDF')
+                //     ->icon('heroicon-o-document-arrow-down')
+                //     ->color('danger')
+                //     ->action(function ($record) {
+                //         // Implementasi export PDF
+                //         Notification::make()
+                //             ->title('PDF sedang diproses')
+                //             ->body('File akan diunduh sebentar lagi.')
+                //             ->info()
+                //             ->send();
+                //     }),
             ])
             ->emptyStateHeading('Tidak Ada Data Final')
             ->emptyStateDescription('Belum ada data yang mencapai tahap akhir.')
