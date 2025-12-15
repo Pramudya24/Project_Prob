@@ -110,6 +110,7 @@ class PengadaanDaruratResource extends Resource
                         Forms\Components\TextInput::make('nilai_kontrak')
                             ->label('Nilai Kontrak')
                             ->rule('numeric')
+                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
                             ->extraInputAttributes([
                                     'pattern' => '[0-9]*',
                                     'inputmode' => 'numeric',
@@ -142,6 +143,7 @@ class PengadaanDaruratResource extends Resource
                                 Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
                                     ->schema([
                                         Forms\Components\Radio::make('pdn_tkdn_impor')
+                                        ->label('Pilih salah satu')
                                             ->options([
                                                 'PDN' => 'PDN',
                                                 'TKDN' => 'TKDN',
@@ -170,7 +172,8 @@ class PengadaanDaruratResource extends Resource
                                 Forms\Components\Group::make()
                                     ->schema([
                                         Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
-                                            ->label('Nilai PDN/TKDN/IMPOR')
+                                            ->label('Nilai IMPOR')
+                                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
@@ -222,6 +225,7 @@ class PengadaanDaruratResource extends Resource
                                 Forms\Components\Fieldset::make('UMK / Non UMK')
                                     ->schema([
                                         Forms\Components\Radio::make('umk_non_umk')
+                                        ->label('Pilih salah satu')
                                             ->options([
                                                 'UMK' => 'UMK',
                                                 'Non UMK' => 'Non UMK',
@@ -243,6 +247,7 @@ class PengadaanDaruratResource extends Resource
 
                                 Forms\Components\TextInput::make('nilai_umk')
                                     ->label('Nilai UMK')
+                                    ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
                                     ->numeric()
                                     ->disabled()
                                     ->dehydrated()

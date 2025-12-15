@@ -107,6 +107,7 @@ class SwakelolaResource extends Resource
                         Forms\Components\TextInput::make('nilai_kontrak')
                             ->label('Nilai Kontrak')
                             ->required()
+                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
                             ->rule('numeric')
                             ->extraInputAttributes([
                                     'pattern' => '[0-9]*',

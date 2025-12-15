@@ -125,7 +125,7 @@ class ViewRombongan extends ViewRecord
             'tender' => 'Tender',
             'epurcasing' => 'E-Purchasing',
             'swakelola' => 'Swakelola',
-            'nontender' => 'Non Tender',
+            'nontender' => 'Pencatatan Non Tender',
             'pengadaan_darurat' => 'Pengadaan Darurat',
             default => $type
         };
@@ -135,11 +135,11 @@ class ViewRombongan extends ViewRecord
     {
         return match ($type) {
             'pl' => 'success',
-            'tender' => 'primary',
+            'tender' => 'danger',
             'epurcasing' => 'info',
-            'swakelola' => 'warning',
-            'nontender' => 'warning',
-            'pengadaan_darurat' => 'danger',
+            'swakelola' => 'primary',
+            'nontender' => 'gray',
+            'pengadaan_darurat' => 'warning',
             default => 'secondary'
         };
     }

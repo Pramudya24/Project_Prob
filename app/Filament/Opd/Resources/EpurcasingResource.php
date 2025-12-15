@@ -122,6 +122,7 @@ class EpurcasingResource extends Resource
                         Forms\Components\TextInput::make('nilai_kontrak')
                             ->label('Nilai Kontrak')
                             ->rule('numeric')
+                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
                             ->extraInputAttributes([
                                     'pattern' => '[0-9]*',
                                     'inputmode' => 'numeric',
@@ -130,8 +131,10 @@ class EpurcasingResource extends Resource
                             ->required()
                             ->live(onBlur: true)
                             ->prefix('Rp')
-                            ->placeholder('0')
-                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                            
+                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) 
+                            
+                            {
                                 $pdnTkdnImpor = $get('pdn_tkdn_impor');
                                 $umkNonUmk = $get('umk_non_umk');
 
@@ -183,7 +186,8 @@ class EpurcasingResource extends Resource
                                 Forms\Components\Group::make()
                                     ->schema([
                                         Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
-                                            ->label('Nilai PDN/TKDN/IMPOR')
+                                            ->label('Nilai IMPOR')
+                                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
@@ -237,6 +241,7 @@ class EpurcasingResource extends Resource
                                 Forms\Components\Fieldset::make('UMK / Non UMK')
                                     ->schema([
                                         Forms\Components\Radio::make('umk_non_umk')
+                                        ->label('Pilih salah satu')
                                             ->required()
                                             ->options([
                                                 'UMK' => 'UMK',
@@ -258,6 +263,7 @@ class EpurcasingResource extends Resource
 
                                 Forms\Components\TextInput::make('nilai_umk')
                                     ->label('Nilai UMK')
+                                    ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
                                     ->numeric()
                                     ->disabled()
                                     ->dehydrated()
@@ -279,17 +285,17 @@ class EpurcasingResource extends Resource
                             ->live()
                             ->native(false),
 
-                        Forms\Components\FileUpload::make('bast_document')
+                        Forms\Components\FileUpload::make('BAST')
                             ->label('Upload BAST')
-                            ->required(fn(Forms\Get $get): bool => $get('serah_terima_pekerjaan') === 'BAST')
+                            ->required(fn(Forms\Get $get): bool => $get('serah_terima') === 'BAST')
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
                             ->maxSize(5120)
-                            ->directory('bast-documents')
+                            ->directory('BAST')
                             ->downloadable()
                             ->openable()
                             ->visible(
                                 fn(Forms\Get $get): bool =>
-                                $get('serah_terima_pekerjaan') === 'BAST'
+                                $get('serah_terima') === 'BAST'
                             ),
 
                         Forms\Components\Select::make('penilaian_kinerja')

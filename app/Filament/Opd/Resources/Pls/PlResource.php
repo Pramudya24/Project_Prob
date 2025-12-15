@@ -120,7 +120,9 @@ class PlResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('nilai_kontrak')
                             ->label('Nilai Kontrak')
+                            ->step(1)
                             ->rule('numeric')
+                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
                             ->extraInputAttributes([
                                     'pattern' => '[0-9]*',
                                     'inputmode' => 'numeric',
@@ -182,7 +184,8 @@ class PlResource extends Resource
                                 Forms\Components\Group::make()
                                     ->schema([
                                         Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
-                                            ->label('Nilai PDN/TKDN/IMPOR')
+                                            ->label('Nilai IMPOR')
+                                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
@@ -235,6 +238,7 @@ class PlResource extends Resource
                                 Forms\Components\Fieldset::make('UMK / Non UMK')
                                     ->schema([
                                         Forms\Components\Radio::make('umk_non_umk')
+                                        ->label('Pilih salah satu')
                                             ->required()
                                             ->options([
                                                 'UMK' => 'UMK',
@@ -256,6 +260,7 @@ class PlResource extends Resource
 
                                 Forms\Components\TextInput::make('nilai_umk')
                                     ->label('Nilai UMK')
+                                    ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
                                     ->numeric()
                                     ->disabled()
                                     ->dehydrated()

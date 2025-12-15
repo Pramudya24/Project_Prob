@@ -25,6 +25,7 @@ return new class extends Migration
                     'Jasa Lainnya',
                     'Terintegrasi'
                 ])->nullable();
+                $table->string('metode_pengadaan')->nullable();
                 $table->string('surat_pesanan')->nullable();
                 $table->decimal('nilai_kontrak', 20, 2)->nullable();
                 $table->enum('pdn_tkdn_impor', [
@@ -42,6 +43,7 @@ return new class extends Migration
                     'BAST',
                     'On Progres'
                 ])->nullable();
+                $table->string('BAST')->nullable();
                 $table->text('penilaian_kinerja')->nullable();
                 $table->timestamps();
                 $table->softDeletes();

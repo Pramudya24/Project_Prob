@@ -23,6 +23,7 @@ class Epurcasing extends Model
         'pagu_rup',
         'kode_paket',
         'jenis_pengadaan',
+        'metode_pengadaan',
         'surat_pesanan',
         'nilai_kontrak',
         'pdn_tkdn_impor',
@@ -30,6 +31,7 @@ class Epurcasing extends Model
         'umk_non_umk',
         'nilai_umk',
         'serah_terima',
+        'BAST',
         'penilaian_kinerja',
         'metode_pengadaan',
     ];

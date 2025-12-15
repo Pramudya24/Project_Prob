@@ -154,7 +154,7 @@ class EditRombongan extends EditRecord
             'App\Models\Epurcasing' => $this->getEpurcasingFields($item),
             'App\Models\Swakelola' => $this->getSwakelolaFields($item),
             'App\Models\PengadaanDarurat' => $this->getPengadaanDaruratFields($item),
-            'App\Models\NonTender' => $this->getNonTenderFields($item),
+            'App\Models\nontender' => $this->getNonTenderFields($item),
             default => []
         };
 
@@ -686,7 +686,7 @@ class EditRombongan extends EditRecord
                 case 'App\Models\PengadaanDarurat':
                     $this->updatePengadaanDaruratData($item, $data);
                     break;
-                case 'App\Models\NonTender':
+                case 'App\Models\nontender':
                     $this->updateNonTenderData($item, $data);
                     break;
                 default:
@@ -809,12 +809,12 @@ class EditRombongan extends EditRecord
     private function getTypeLabel($type): string
     {
         return match ($type) {
-            'App\Models\Pl' => 'PL',
+            'App\Models\Pl' => 'Non Tender',
             'App\Models\Tender' => 'Tender',
             'App\Models\Epurcasing' => 'E-Purchasing',
             'App\Models\Swakelola' => 'Swakelola',
             'App\Models\PengadaanDarurat' => 'Pengadaan Darurat',
-            'App\Models\NonTender' => 'Non Tender',
+            'App\Models\nontender' => 'Pencatatan Non Tender',
             default => 'Unknown'
         };
     }
@@ -823,10 +823,10 @@ class EditRombongan extends EditRecord
     {
         return match ($type) {
             'App\Models\Pl' => 'success',
-            'App\Models\Tender' => 'primary',
+            'App\Models\Tender' => 'danger',
             'App\Models\Epurcasing' => 'info',
-            'App\Models\Swakelola' => 'warning',
-            'App\Models\NonTender' => 'warning',
+            'App\Models\Swakelola' => 'primary',
+            'App\Models\nontender' => 'gray',
             'App\Models\PengadaanDarurat' => 'warning',
             default => 'gray'
         };
@@ -850,7 +850,7 @@ class EditRombongan extends EditRecord
             'App\Models\Epurcasing' => \App\Filament\Opd\Resources\EpurcasingResource::getUrl('view', ['record' => $item->id]),
             'App\Models\Swakelola' => \App\Filament\Opd\Resources\SwakelolaResource::getUrl('view', ['record' => $item->id]),
             'App\Models\PengadaanDarurat' => \App\Filament\Opd\Resources\PengadaanDaruratResource::getUrl('view', ['record' => $item->id]),
-            'App\Models\NonTender' => \App\Filament\Opd\Resources\NonTenderResource::getUrl('view', ['record' => $item->id]),
+            'App\Models\Nontender' => \App\Filament\Opd\Resources\NonTenderResource::getUrl('view', ['record' => $item->id]),
             default => null
         };
     }

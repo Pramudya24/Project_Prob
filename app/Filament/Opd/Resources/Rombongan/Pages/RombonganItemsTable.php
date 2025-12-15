@@ -18,6 +18,10 @@ use Illuminate\Contracts\View\View;
 
 class RombonganItemsTable extends BaseWidget
 {
+
+    use InteractsWithTable;
+    use InteractsWithForms;
+
     public int $rombonganId;
 
     protected static ?string $heading = 'Data dalam Rombongan';
@@ -50,15 +54,13 @@ class RombonganItemsTable extends BaseWidget
 
                 Tables\Columns\TextColumn::make('item.pagu_rup')
                     ->label('Pagu RUP')
-                    ->money('IDR')
-                    ->sortable()
-                    ->placeholder('0'),
+                    ->formatStateUsing(fn($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('item.nilai_kontrak')
                     ->label('Nilai Kontrak')
-                    ->money('IDR')
-                    ->sortable()
-                    ->placeholder('0'),
+                    ->formatStateUsing(fn($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Ditambahkan')
@@ -118,13 +120,10 @@ class RombonganItemsTable extends BaseWidget
             ])
             ->striped();
     }
-    protected function getListeners(): array
-    {
-        return [
-            'refreshRombonganItems' => '$refresh',
-            'refreshAvailableItems' => '$refresh',
-        ];
-    }
+    protected $listeners = [
+    'refreshRombonganItems' => '$refresh',
+    'refreshAvailableItems' => '$refresh',
+    ];
 
     private function getEditFormSchema($record): array
     {
@@ -1211,12 +1210,13 @@ class RombonganItemsTable extends BaseWidget
     private function getTypeLabel($type): string
     {
         return match ($type) {
-            'App\Models\Pl' => 'PL',
+            'App\Models\Pl' => 'Non Tender',
             'App\Models\Tender' => 'Tender',
             'App\Models\Epurcasing' => 'Epurcasing',
-            'App\Models\Swakelola' => 'Swakelola',
-            'App\Models\PengadaanDarurat' => 'PengadaanDarurat',
-            'App\Models\NonTender' => 'NonTender',
+            'App\Models\Swakelola' => 'Pencatatan Swakelola',
+            'App\Models\Nontender' => 'Pencatatan Non Tender',
+            'App\Models\PengadaanDarurat' => 'Pencatatan Pengadaan Darurat',
+            
             default => 'Unknown'
         };
     }
@@ -1225,14 +1225,18 @@ class RombonganItemsTable extends BaseWidget
     {
         return match ($type) {
             'App\Models\Pl' => 'success',
-            'App\Models\Tender' => 'primary',
+            'App\Models\Tender' => 'danger',
             'App\Models\Epurcasing' => 'info',
-            'App\Models\Swakelola' => 'warning',
-            'App\Models\NonTender' => 'danger',
+            'App\Models\Swakelola' => 'primary',
+            'App\Models\Nontender' => 'gray',
             'App\Models\PengadaanDarurat' => 'warning',
             default => 'gray'
         };
     }
+    public function render(): View
+{
+    return view('livewire.rombongan-items-table');
+}
 
     
 

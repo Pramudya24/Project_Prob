@@ -62,7 +62,7 @@ return new class extends Migration
                 'BAST',
                 'On Progres'
             ])->nullable();
-
+            $table->string('BAST')->nullable();
             // 11. Penilaian Kinerja
             $table->enum('penilaian_kinerja', [
             'Baik Sekali',

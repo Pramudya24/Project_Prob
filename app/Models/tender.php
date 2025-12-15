@@ -30,6 +30,7 @@ class Tender extends Model
         'umk_non_umk',
         'nilai_umk',
         'serah_terima_pekerjaan',
+        'BAST',
         'penilaian_kinerja',
     ];
     protected $casts = [

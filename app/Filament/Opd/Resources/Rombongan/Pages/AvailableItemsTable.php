@@ -7,7 +7,7 @@ use App\Models\Pl;
 use App\Models\Tender;
 use App\Models\Epurcasing;
 use App\Models\Swakelola;
-use App\Models\Nontender;
+use App\Models\nontender;
 use App\Models\PengadaanDarurat;
 use App\Models\Rombongan;
 use Illuminate\Support\Collection;
@@ -37,12 +37,12 @@ class AvailableItemsTable extends Widget
         $collection = collect();
 
         $models = [
-            ['class' => Pl::class, 'alias' => 'pl', 'label' => 'PL', 'color' => 'success'],
-            ['class' => Tender::class, 'alias' => 'tender', 'label' => 'Tender', 'color' => 'primary'],
-            ['class' => Epurcasing::class, 'alias' => 'epurcasing', 'label' => 'E-Purchasing', 'color' => 'info'],
-            ['class' => Swakelola::class, 'alias' => 'swakelola', 'label' => 'Swakelola', 'color' => 'warning'],
-            ['class' => Nontender::class, 'alias' => 'nontender', 'label' => 'Non Tender', 'color' => 'danger'],
-            ['class' => PengadaanDarurat::class, 'alias' => 'pengadaan_darurat', 'label' => 'Pengadaan Darurat', 'color' => 'gray'],
+            ['class' => Pl::class, 'alias' => 'pl', 'label' => 'Non Tender', 'color' => 'success'],
+            ['class' => Tender::class, 'alias' => 'tender', 'label' => 'Tender', 'color' => 'danger'],
+            ['class' => Epurcasing::class, 'alias' => 'epurcasing', 'label' => 'EPurcasing', 'color' => 'info'],
+            ['class' => Swakelola::class, 'alias' => 'swakelola', 'label' => 'Pencatatan Swakelola', 'color' => 'primary'],
+            ['class' => Nontender::class, 'alias' => 'nontender', 'label' => 'Pencatatan Non Tender', 'color' => 'gray'],
+            ['class' => PengadaanDarurat::class, 'alias' => 'pengadaan_darurat', 'label' => 'Pencatatan Pengadaan Darurat', 'color' => 'warning'],
         ];
 
         foreach ($models as $config) {

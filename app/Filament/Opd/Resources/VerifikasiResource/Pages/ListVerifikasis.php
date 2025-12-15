@@ -23,8 +23,8 @@ class ListVerifikasis extends ListRecords
                 ->color('primary')
                 ->url(fn () => VerifikasiResource::getUrl('data-sudah-progres')),
                 
-            Actions\Action::make('History')
-                ->label('Data Akhir')
+            Actions\Action::make('data-akhir')
+                ->label('History')
                 ->color('primary')
                 ->url(fn () => VerifikasiResource::getUrl('data-akhir')),
                 
