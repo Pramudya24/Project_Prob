@@ -136,6 +136,7 @@ class UserSeeder extends Seeder
                     'opd_code' => $opd['code'],  // SIMPAN CODE DI USER
                     'password' => $password,
                     'email_verified_at' => now(),
+                    
                 ]
             );
 

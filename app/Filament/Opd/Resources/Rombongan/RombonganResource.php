@@ -19,6 +19,11 @@ class RombonganResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
     protected static ?string $navigationLabel = 'Pengajuan';
     protected static ?int $navigationSort = 8;
+    protected static ?string $pluralModelLabel = 'Pengajuan';
+    public static function getModelLabel(): string
+    {
+        return 'Pengajuan';
+    }
 
     public static function form(Form $form): Form
 {
