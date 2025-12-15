@@ -86,7 +86,7 @@ class RombonganVerifikatorResource extends Resource
                                     $html .= '<h4 class="text-lg font-semibold">Item: ' . htmlspecialchars($item['nama_pekerjaan']) . '</h4>';
                                     $html .= '<div class="flex items-center gap-3">';
                                     $html .= '<span class="text-sm font-medium">';
-                                    $html .= 'Progress: ' . $progress['verified'] . '/' . $progress['total'] . ' field (' . $progress['percentage'] . '%)';
+                                    // $html .= 'Progress: ' . $progress['verified'] . '/' . $progress['total'] . ' field (' . $progress['percentage'] . '%)';
                                     $html .= '</span>';
                                     
                                     // Button Centang Semua
@@ -94,7 +94,7 @@ class RombonganVerifikatorResource extends Resource
                                         $html .= '<button ';
                                         $html .= 'onclick="verifyAllFields(' . $item['rombongan_item_id'] . ')" ';
                                         $html .= 'class="px-3 py-1.5 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition">';
-                                        $html .= '✓ Centang Semua';
+                                        $html .= 'Centang Semua';
                                         $html .= '</button>';
                                     }
                                     
@@ -102,10 +102,10 @@ class RombonganVerifikatorResource extends Resource
                                     $html .= '</div>';
 
                                     // Progress bar
-                                    $html .= '<div class="w-full bg-gray-200 rounded-full h-2">';
-                                    $html .= '<div class="' . $progressColor . ' h-2 rounded-full transition-all" style="width: ' . $progress['percentage'] . '%"></div>';
-                                    $html .= '</div>';
-                                    $html .= '</div>';
+                                    // $html .= '<div class="w-full bg-gray-200 rounded-full h-2">';
+                                    // $html .= '<div class="' . $progressColor . ' h-2 rounded-full transition-all" style="width: ' . $progress['percentage'] . '%"></div>';
+                                    // $html .= '</div>';
+                                    // $html .= '</div>';
 
                                     // Tabel field
                                     $html .= '<div class="overflow-x-auto mb-6">';
@@ -674,6 +674,9 @@ return new HtmlString($html);
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => 
+                $query->where('status_pengiriman', 'Terkirim ke Verifikator')
+            )
             ->columns([
                 Tables\Columns\TextColumn::make('nama_rombongan')
                     ->label('Nama Rombongan')
@@ -699,18 +702,6 @@ return new HtmlString($html);
                         'Sudah' => 'success',
                         default => 'gray',
                     }),
-
-                Tables\Columns\TextColumn::make('verification_progress')
-                    ->label('Progress')
-                    ->getStateUsing(function ($record) {
-                        $progress = $record->getVerificationProgress();
-                        return $progress['verified'] . '/' . $progress['total'] . ' (' . $progress['percentage'] . '%)';
-                    })
-                    ->badge()
-                    ->color(
-                        fn($record) =>
-                        $record->getVerificationProgress()['percentage'] === 100 ? 'success' : 'warning'
-                    ),
 
                 Tables\Columns\TextColumn::make('status_pengiriman')
                     ->label('Status Pengiriman')
@@ -812,7 +803,10 @@ return new HtmlString($html);
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->where('status_pengiriman', 'Terkirim ke Verifikator');
+        // ✅ Jangan pakai parent, langsung from model
+        return Rombongan::query()
+            ->withoutGlobalScope('opd_filter') // ❗ PENTING: Bypass global scope OPD
+            ->where('status_pengiriman', 'Terkirim ke Verifikator')
+            ->orderBy('tanggal_masuk_verifikator', 'desc');
     }
 }
