@@ -144,42 +144,64 @@ Route::post('/verifikator/rombongan-verifikators/verify-all-fields', function ()
 })->middleware('auth')->name('verifikator.verify-all-fields');
 
 Route::get('/private/{path}', function ($path) {
-    // Decode path
-    $path = urldecode($path);
-    
-    // Path lengkap ke file di storage
-    $fullPath = storage_path('app/private/' . $path);
-    
-    // Cek apakah file exists
-    if (!file_exists($fullPath)) {
-        \Log::error('File not found:', ['path' => $fullPath, 'requested' => $path]);
-        abort(404, "File tidak ditemukan: $path");
+    try {
+        // Decode path
+        $path = urldecode($path);
+        
+        // Cek file exists pakai Storage facade (lebih aman)
+        if (!Storage::disk('private')->exists($path)) {
+            \Log::error('File not found:', [
+                'path' => storage_path('app/private/' . $path),
+                'requested' => $path
+            ]);
+            
+            // Return placeholder SVG instead of abort
+            $svg = '<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+                <rect width="100%" height="100%" fill="#f3f4f6"/>
+                <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#9ca3af" font-size="18" font-family="system-ui">
+                    File Tidak Ditemukan
+                </text>
+                <text x="50%" y="60%" text-anchor="middle" dy=".3em" fill="#d1d5db" font-size="12" font-family="monospace">
+                    ' . htmlspecialchars(basename($path)) . '
+                </text>
+            </svg>';
+            
+            return response($svg, 404)
+                ->header('Content-Type', 'image/svg+xml')
+                ->header('Cache-Control', 'no-cache');
+        }
+        
+        // Get file content dan mime type
+        $file = Storage::disk('private')->get($path);
+        $mimeType = Storage::disk('private')->mimeType($path);
+        
+        // Set headers
+        $headers = [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . basename($path) . '"',
+            'Cache-Control' => 'public, max-age=604800', // Cache 1 minggu
+        ];
+        
+        return response($file, 200, $headers);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error serving private file:', [
+            'path' => $path,
+            'error' => $e->getMessage()
+        ]);
+        
+        // Return error placeholder
+        $svg = '<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#fee"/>
+            <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#c00" font-size="18">
+                Error: ' . htmlspecialchars($e->getMessage()) . '
+            </text>
+        </svg>';
+        
+        return response($svg, 500)
+            ->header('Content-Type', 'image/svg+xml');
     }
-    
-    // Get extension
-    $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
-    
-    // Mime types untuk preview
-    $mimeTypes = [
-        'pdf' => 'application/pdf',
-        'png' => 'image/png',
-        'jpg' => 'image/jpeg',
-        'jpeg' => 'image/jpeg',
-        'gif' => 'image/gif',
-        'webp' => 'image/webp',
-        'svg' => 'image/svg+xml',
-        'bmp' => 'image/bmp',
-    ];
-    
-    // Set headers
-    $headers = [
-        'Content-Type' => $mimeTypes[$extension] ?? mime_content_type($fullPath),
-        'Content-Disposition' => 'inline; filename="' . basename($path) . '"',
-        'Cache-Control' => 'public, max-age=604800',
-    ];
-    
-    return response()->file($fullPath, $headers);
-})->where('path', '.*')  // ✅ TERIMA SEMUA PATH (termasuk subfolder)
+})->where('path', '.*')
     ->middleware(['auth'])
     ->name('private.file');
 require __DIR__ . '/auth.php';

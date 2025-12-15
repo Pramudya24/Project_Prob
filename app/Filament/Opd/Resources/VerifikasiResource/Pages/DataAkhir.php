@@ -7,7 +7,7 @@ use App\Models\Rombongan;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Resources\Pages\Page;
-use Filament\Tables\Concerns\InteractsWithTable; // ← GANTI INI (hapus "Pages\")
+use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Notifications\Notification;
@@ -32,7 +32,7 @@ class DataAkhir extends Page implements HasTable
                 Rombongan::query()
                     ->where('status_pengiriman', 'Data Akhir')
                     ->where('nama_opd', auth()->user()->opd_code)
-                    ->orderBy('tanggal_verifikasi', 'desc')
+                    ->orderBy('tanggal_kirim_monitoring', 'desc')
             )
             ->columns([
                 Tables\Columns\TextColumn::make('nama_rombongan')
@@ -41,48 +41,39 @@ class DataAkhir extends Page implements HasTable
                     ->sortable()
                     ->description(fn($record) => 'Total: ' . $record->total_items . ' item'),
                     
-                Tables\Columns\TextColumn::make('status_verifikasi')
+                Tables\Columns\TextColumn::make('no_spm')
+                    ->label('No. SPM')
+                    ->badge()
+                    ->color('success'),
+                    
+                Tables\Columns\TextColumn::make('status_monitoring')
                     ->label('Status')
                     ->badge()
                     ->color('success')
-                    ->formatStateUsing(fn() => '✓ Final'),
+                    ->getStateUsing(fn($record) => $record->is_sent_to_monitoring ? 'Terkirim ke Monitoring' : 'Final'),
                     
                 Tables\Columns\TextColumn::make('total_nilai')
                     ->label('Total Nilai')
-                    ->money('IDR')
+                    ->formatStateUsing(fn($state) => 'Rp ' . number_format($state, 0, ',', '.'))
                     ->sortable(),
                     
-                Tables\Columns\TextColumn::make('tanggal_verifikasi')
-                    ->label('Lolos Verifikasi')
+                Tables\Columns\TextColumn::make('tanggal_kirim_monitoring')
+                    ->label('Tanggal Kirim')
                     ->dateTime('d/m/Y H:i')
-                    ->sortable(),
-                    
-                Tables\Columns\TextColumn::make('verifikator.name')
-                    ->label('Verifikator')
+                    ->sortable()
                     ->placeholder('-'),
             ])
             ->actions([
-                // Tables\Actions\Action::make('lihat_detail')
-                //     ->label('Lihat Detail')
-                //     ->icon('heroicon-o-eye')
-                //     ->color('primary')
-                //     ->modalHeading(fn($record) => 'Detail Final: ' . $record->nama_rombongan)
-                //     ->modalContent(fn($record) => view('filament.opd.components.detail-data-akhir', ['record' => $record]))
-                //     ->modalSubmitAction(false)
-                //     ->modalCancelActionLabel('Tutup'),
-                    
-                // Tables\Actions\Action::make('export_pdf')
-                //     ->label('Export PDF')
-                //     ->icon('heroicon-o-document-arrow-down')
-                //     ->color('danger')
-                //     ->action(function ($record) {
-                //         // Implementasi export PDF
-                //         Notification::make()
-                //             ->title('PDF sedang diproses')
-                //             ->body('File akan diunduh sebentar lagi.')
-                //             ->info()
-                //             ->send();
-                //     }),
+                Tables\Actions\Action::make('lihat_detail')
+                    ->label('Detail')
+                    ->icon('heroicon-o-eye')
+                    ->color('primary')
+                    ->modalHeading(fn($record) => 'Detail: ' . $record->nama_rombongan)
+                    ->modalContent(fn($record) => view('filament.opd.components.detail-rombongan', ['record' => $record]))
+                    ->modalWidth('7xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup')
+                    ->slideOver(),
             ])
             ->emptyStateHeading('Tidak Ada Data Final')
             ->emptyStateDescription('Belum ada data yang mencapai tahap akhir.')

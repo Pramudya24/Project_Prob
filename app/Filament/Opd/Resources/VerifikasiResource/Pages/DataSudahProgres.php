@@ -7,10 +7,11 @@ use App\Models\Rombongan;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Resources\Pages\Page;
-use Filament\Tables\Concerns\InteractsWithTable; // ← GANTI INI (hapus "Pages\")
+use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Notifications\Notification;
+use Filament\Forms;
 
 class DataSudahProgres extends Page implements HasTable
 {
@@ -43,9 +44,16 @@ class DataSudahProgres extends Page implements HasTable
                     
                 Tables\Columns\TextColumn::make('verification_progress')
                     ->label('Status Verifikasi')
-                    ->getStateUsing(fn($record) => '✓ 100% Lolos')
+                    ->getStateUsing(fn($record) => 'Lolos')
                     ->badge()
                     ->color('success'),
+                    
+                Tables\Columns\TextColumn::make('no_spm')
+                    ->label('No. SPM')
+                    ->placeholder('-')
+                    ->badge()
+                    ->color(fn($record) => $record->no_spm ? 'success' : 'gray')
+                    ->icon(fn($record) => $record->no_spm ? 'heroicon-o-check-circle' : 'heroicon-o-minus-circle'),
                     
                 Tables\Columns\TextColumn::make('keterangan_verifikasi')
                     ->label('Catatan Verifikator')
@@ -60,44 +68,126 @@ class DataSudahProgres extends Page implements HasTable
                     ->badge()
                     ->color('success'),
                     
-                Tables\Columns\TextColumn::make('verifikator.name')
-                    ->label('Verifikator')
-                    ->placeholder('-'),
-                    
                 Tables\Columns\TextColumn::make('total_nilai')
                     ->label('Total Nilai')
-                    ->money('IDR')
+                    ->formatStateUsing(fn($state) => 'Rp ' . number_format($state, 0, ',', '.'))
                     ->sortable(),
             ])
             ->actions([
-                // Tables\Actions\Action::make('lihat_detail')
-                //     ->label('Lihat Detail')
-                //     ->icon('heroicon-o-eye')
-                //     ->color('success')
-                //     ->modalHeading(fn($record) => 'Detail: ' . $record->nama_rombongan)
-                //     ->modalContent(fn($record) => view('filament.opd.components.detail-verifikasi-lolos', ['record' => $record]))
-                //     ->modalSubmitAction(false)
-                //     ->modalCancelActionLabel('Tutup'),
-                    
-                Tables\Actions\Action::make('kirim_ke_data_akhir')
-                    ->label('Kirim ke Data Akhir')
+                Tables\Actions\Action::make('buat_spm')
+                    ->label('Buat SPM')
+                    ->icon('heroicon-o-document-plus')
+                    ->color('warning')
+                    ->form([
+                        Forms\Components\TextInput::make('no_spm')
+                            ->label('Nomor SPM')
+                            ->placeholder('Contoh: SPM/2024/001')
+                            ->required()
+                            ->maxLength(100)
+                            ->default(fn($record) => $record->no_spm)
+                            ->helperText('Masukkan nomor SPM untuk rombongan ini'),
+                    ])
+                    ->fillForm(fn($record) => [
+                        'no_spm' => $record->no_spm,
+                    ])
+                    ->modalHeading(fn($record) => $record->no_spm ? 'Edit SPM' : 'Buat SPM')
+                    ->modalDescription(fn($record) => ($record->no_spm ? 'Edit' : 'Buat') . ' nomor SPM untuk: ' . $record->nama_rombongan)
+                    ->modalSubmitActionLabel(fn($record) => $record->no_spm ? 'Update SPM' : 'Simpan SPM')
+                    ->action(function ($record, array $data) {
+                        try {
+                            $record->update([
+                                'no_spm' => $data['no_spm'],
+                            ]);
+                            
+                            Notification::make()
+                                ->title('✅ SPM Berhasil Disimpan')
+                                ->body('Nomor SPM "' . $data['no_spm'] . '" telah disimpan.')
+                                ->success()
+                                ->send();
+                                
+                            // Refresh table
+                            $this->dispatch('$refresh');
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('❌ Gagal Menyimpan')
+                                ->body('Terjadi kesalahan: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+                
+                Tables\Actions\Action::make('kirim_ke_monitoring')
+                    ->label('Kirim ke Monitoring')
+                    ->icon('heroicon-o-arrow-right-circle')
+                    ->color(fn($record) => !empty($record->no_spm) ? 'primary' : 'gray')
+                    ->disabled(fn($record) => empty($record->no_spm))
+                    ->tooltip(fn($record) => empty($record->no_spm) ? 'Harap buat SPM terlebih dahulu' : 'Kirim ke Monitoring')
+                    ->requiresConfirmation()
+                    ->modalHeading('Kirim ke Monitoring')
+                    ->modalDescription(fn($record) => 'Data sudah lolos verifikasi 100% dan SPM sudah dibuat (' . $record->no_spm . '). Kirim ke Monitoring?')
+                    ->modalSubmitActionLabel('Ya, Kirim')
+                    ->action(function ($record) {
+                        try {
+                            $record->update([
+                                'status_pengiriman' => 'Data Akhir',
+                                'is_sent_to_monitoring' => true,
+                                'tanggal_kirim_monitoring' => now(),
+                            ]);
+                            
+                            Notification::make()
+                                ->title('✅ Berhasil')
+                                ->body('Data "' . $record->nama_rombongan . '" telah dikirim ke Data Akhir dan Monitoring.')
+                                ->success()
+                                ->send();
+                                
+                            $this->dispatch('$refresh');
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('❌ Gagal Mengirim')
+                                ->body('Terjadi kesalahan: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkAction::make('kirim_bulk_ke_monitoring')
+                    ->label('Kirim ke Monitoring (Bulk)')
                     ->icon('heroicon-o-arrow-right-circle')
                     ->color('primary')
                     ->requiresConfirmation()
-                    ->modalHeading('Kirim ke Data Akhir')
-                    ->modalDescription('Data sudah lolos verifikasi 100%. Kirim ke Data Akhir?')
-                    ->modalSubmitActionLabel('Ya, Kirim')
-                    ->action(function ($record) {
-                        $record->update([
-                            'status_pengiriman' => 'Data Akhir',
-                            'tanggal_finalisasi' => now(),
-                        ]);
+                    ->modalHeading('Kirim Bulk ke Monitoring')
+                    ->modalDescription('Hanya data yang sudah memiliki SPM yang akan dikirim.')
+                    ->action(function ($records) {
+                        $sent = 0;
+                        $skipped = 0;
                         
-                        Notification::make()
-                            ->title('✅ Berhasil')
-                            ->body('Data "' . $record->nama_rombongan . '" telah dikirim ke Data Akhir.')
-                            ->success()
-                            ->send();
+                        foreach ($records as $record) {
+                            if (!empty($record->no_spm)) {
+                                $record->update([
+                                    'status_pengiriman' => 'Data Akhir',
+                                    'is_sent_to_monitoring' => true,
+                                    'tanggal_kirim_monitoring' => now(),
+                                ]);
+                                $sent++;
+                            } else {
+                                $skipped++;
+                            }
+                        }
+                        
+                        if ($sent > 0) {
+                            Notification::make()
+                                ->title('✅ Berhasil')
+                                ->body("$sent data berhasil dikirim ke Monitoring." . ($skipped > 0 ? " $skipped data dilewati (belum ada SPM)." : ''))
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('⚠️ Peringatan')
+                                ->body('Tidak ada data yang dikirim. Semua data belum memiliki SPM.')
+                                ->warning()
+                                ->send();
+                        }
                     }),
             ])
             ->emptyStateHeading('Tidak Ada Data')

@@ -25,11 +25,11 @@ class EditDataProgres extends EditRecord
   {
     return 'Edit Data';
   }
-  
+
   public function mount($record): void
   {
-      parent::mount($record);
-      $this->form->fill($this->loadFormData());
+    parent::mount($record);
+    $this->form->fill($this->loadFormData());
   }
 
   public function form(Form $form): Form
@@ -360,17 +360,41 @@ class EditDataProgres extends EditRecord
 
       Forms\Components\Section::make('Nilai Kontrak & Komponen')
         ->schema([
-          $this->makeField('nilai_kontrak', $rombonganItemId, $rombonganItem, $item)
+          Forms\Components\TextInput::make('nilai_kontrak')
             ->label('Nilai Kontrak')
+            ->rule('numeric')
+            ->extraInputAttributes([
+              'pattern' => '[0-9]*',
+              'inputmode' => 'numeric',
+              'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+            ])
             ->required()
+            ->live(onBlur: true)
             ->prefix('Rp')
+            ->placeholder('0')
+            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+              $pdnTkdnImpor = $get('pdn_tkdn_impor');
+              $umkNonUmk = $get('umk_non_umk');
+
+              if ($pdnTkdnImpor === 'IMPOR') {
+                $set('nilai_pdn_tkdn_impor', 0);
+              } elseif ($pdnTkdnImpor) {
+                $set('nilai_pdn_tkdn_impor', $state);
+              }
+
+              if ($umkNonUmk === 'Non UMK') {
+                $set('nilai_umk', 0);
+              } elseif ($umkNonUmk) {
+                $set('nilai_umk', $state);
+              }
+            })
             ->columnSpanFull(),
 
           Forms\Components\Grid::make()
             ->schema([
               Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
                 ->schema([
-                  $this->makeRadioField('pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
+                  Forms\Components\Radio::make('pdn_tkdn_impor')
                     ->label('Pilih salah satu')
                     ->required()
                     ->options([
@@ -378,6 +402,20 @@ class EditDataProgres extends EditRecord
                       'TKDN' => 'TKDN',
                       'IMPOR' => 'IMPOR',
                     ])
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                      $nilaiKontrak = $get('nilai_kontrak');
+                      if ($state === 'IMPOR') {
+                        $set('nilai_pdn_tkdn_impor', 0);
+                        $set('persentase_tkdn', null);
+                      } elseif ($state === 'PDN') {
+                        $set('nilai_pdn_tkdn_impor', $nilaiKontrak);
+                        $set('persentase_tkdn', null);
+                      } else {
+                        $set('nilai_pdn_tkdn_impor', 0);
+                        $set('persentase_tkdn', 0);
+                      }
+                    })
                     ->inline()
                     ->columnSpanFull(),
                 ])
@@ -385,11 +423,51 @@ class EditDataProgres extends EditRecord
 
               Forms\Components\Group::make()
                 ->schema([
-                  $this->makeField('nilai_pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
+                  Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
                     ->label('Nilai PDN/TKDN/IMPOR')
+                    ->numeric()
                     ->disabled()
                     ->dehydrated()
-                    ->prefix('Rp'),
+                    ->prefix('Rp')
+                    ->visible(
+                      fn(Forms\Get $get): bool =>
+                      in_array($get('pdn_tkdn_impor'), ['PDN', 'IMPOR'])
+                    ),
+
+                  Forms\Components\Grid::make()
+                    ->schema([
+                      Forms\Components\TextInput::make('persentase_tkdn')
+                        ->label('Persentase TKDN')
+                        ->rule('numeric')
+                        ->extraInputAttributes([
+                          'pattern' => '[0-9]*',
+                          'inputmode' => 'numeric',
+                          'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                        ])
+                        ->suffix('%')
+                        ->minValue(0)
+                        ->maxValue(100)
+                        ->required(fn(Forms\Get $get): bool => $get('pdn_tkdn_impor') === 'TKDN')
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                          $nilaiKontrak = $get('nilai_kontrak');
+                          $persentase = $state ?: 0;
+                          $hasil = $nilaiKontrak * ($persentase / 100);
+                          $set('nilai_pdn_tkdn_impor', $hasil);
+                        }),
+                      // Hasil otomatis (READONLY)
+                      Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
+                        ->label('Nilai TKDN')
+                        ->numeric()
+                        ->prefix('Rp')
+                        ->readonly() // Biar tidak bisa diedit
+                        ->default(0),
+                    ])
+                    ->columns(2)
+                    ->visible(
+                      fn(Forms\Get $get): bool =>
+                      $get('pdn_tkdn_impor') === 'TKDN'
+                    ),
                 ])
                 ->columnSpan(1),
             ])
@@ -399,19 +477,29 @@ class EditDataProgres extends EditRecord
             ->schema([
               Forms\Components\Fieldset::make('UMK / Non UMK')
                 ->schema([
-                  $this->makeRadioField('umk_non_umk', $rombonganItemId, $rombonganItem, $item)
+                  Forms\Components\Radio::make('umk_non_umk')
                     ->required()
                     ->options([
                       'UMK' => 'UMK',
                       'Non UMK' => 'Non UMK',
                     ])
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                      $nilaiKontrak = $get('nilai_kontrak');
+                      if ($state === 'Non UMK') {
+                        $set('nilai_umk', 0);
+                      } elseif ($state) {
+                        $set('nilai_umk', $nilaiKontrak);
+                      }
+                    })
                     ->inline()
                     ->columnSpanFull(),
                 ])
                 ->columnSpan(1),
 
-              $this->makeField('nilai_umk', $rombonganItemId, $rombonganItem, $item)
+              Forms\Components\TextInput::make('nilai_umk')
                 ->label('Nilai UMK')
+                ->numeric()
                 ->disabled()
                 ->dehydrated()
                 ->prefix('Rp')
@@ -433,7 +521,7 @@ class EditDataProgres extends EditRecord
 
           Forms\Components\FileUpload::make('bast_document')
             ->label('Upload BAST')
-            ->required(fn(Forms\Get $get): bool => $get('serah_terima_pekerjaan') === 'BAST')
+            ->required(fn(Forms\Get $get): bool => $get('serah_terima') === 'BAST')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
             ->maxSize(5120)
             ->directory('bast-documents')
@@ -441,7 +529,7 @@ class EditDataProgres extends EditRecord
             ->openable()
             ->visible(
               fn(Forms\Get $get): bool =>
-              $get('serah_terima_pekerjaan') === 'BAST'
+              $get('serah_terima') === 'BAST'
             ),
 
           Forms\Components\Select::make('penilaian_kinerja')
@@ -926,16 +1014,14 @@ class EditDataProgres extends EditRecord
   {
     return [
       Actions\Action::make('save')
-        ->label('Simpan Perubahan')
-        ->icon('heroicon-o-check')
+        ->label('Simpan')
         ->color('primary')
         ->action('save'),
 
       Actions\Action::make('back')
         ->label('Batal')
         ->color('gray')
-        ->url(fn() => VerifikasiResource::getUrl('data-progres'))
-        ->icon('heroicon-o-x-mark'),
+        ->url(fn() => VerifikasiResource::getUrl('data-progres')),
     ];
   }
 
@@ -977,6 +1063,5 @@ class EditDataProgres extends EditRecord
       ->success()
       ->send();
     $this->redirect(VerifikasiResource::getUrl('data-progres'));
-
   }
 }

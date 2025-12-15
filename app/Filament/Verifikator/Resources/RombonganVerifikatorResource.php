@@ -88,7 +88,7 @@ class RombonganVerifikatorResource extends Resource
                                     $html .= '<span class="text-sm font-medium">';
                                     // $html .= 'Progress: ' . $progress['verified'] . '/' . $progress['total'] . ' field (' . $progress['percentage'] . '%)';
                                     $html .= '</span>';
-                                    
+
                                     // Button Centang Semua
                                     if ($progress['percentage'] < 100) {
                                         $html .= '<button ';
@@ -97,7 +97,7 @@ class RombonganVerifikatorResource extends Resource
                                         $html .= 'Centang Semua';
                                         $html .= '</button>';
                                     }
-                                    
+
                                     $html .= '</div>';
                                     $html .= '</div>';
 
@@ -127,238 +127,245 @@ class RombonganVerifikatorResource extends Resource
 
                                     $no = 1;
                                     foreach ($item['fields'] as $field) {
-                                    $isVerified = $field['is_verified'];
-                                    $fieldValue = $field['field_value'];
-                                    $fieldName = $field['field_name'];
-                                    $fieldLabel = $field['field_label'];
-                                    $keterangan = $field['keterangan'] ?? '';
-                                    
-                                    // ✅ Tentukan apakah field paten (tidak ada checkbox)
-                                    $isPatenField = in_array($fieldName, ['nama_opd', 'tanggal_dibuat']);
+                                        $isVerified = $field['is_verified'];
+                                        $fieldValue = $field['field_value'];
+                                        $fieldName = $field['field_name'];
+                                        $fieldLabel = $field['field_label'];
+                                        $keterangan = $field['keterangan'] ?? '';
 
-                                    // Format nilai
-                                    if (in_array($fieldName, ['pagu_rup', 'nilai_kontrak', 'total_nilai']) && is_numeric($fieldValue)) {
-                                        $fieldValue = 'Rp ' . number_format($fieldValue, 0, ',', '.');
-                                    }
+                                        // ✅ Tentukan apakah field paten (tidak ada checkbox)
+                                        $isPatenField = in_array($fieldName, ['nama_opd', 'tanggal_dibuat']);
 
-                                    if (str_contains($fieldName, 'tanggal') && $fieldValue && $fieldValue !== '-') {
-                                        try {
-                                            $fieldValue = \Carbon\Carbon::parse($fieldValue)->format('d/m/Y');
-                                        } catch (\Exception $e) {
-                                            // Keep original
+                                        // Format nilai
+                                        if (in_array($fieldName, ['pagu_rup', 'nilai_kontrak', 'total_nilai']) && is_numeric($fieldValue)) {
+                                            $fieldValue = 'Rp ' . number_format($fieldValue, 0, ',', '.');
                                         }
-                                    }
 
-                                    // Cek apakah field gambar atau PDF
-                                    $isImageField = false;
-                                    $isPdfField = false;
-                                    $fileUrl = null;
-                                    
-                                    if ($fieldValue && $fieldValue !== '-') {
-                                    // ✅ FIX: Generate URL yang benar untuk semua jenis file
-                                    
-                                    // Cek apakah ini file (PDF atau gambar)
-                                    $isPdfField = str_ends_with(strtolower($fieldValue), '.pdf');
-                                    
-                                    // Cek apakah ini gambar
-                                    $isImageField = false;
-                                    if (!$isPdfField) {
-                                        $imageKeywords = ['foto', 'gambar', 'image', 'photo', 'picture', 'realisasi'];
-                                        foreach ($imageKeywords as $keyword) {
-                                            if (str_contains(strtolower($fieldName), $keyword)) {
-                                                $isImageField = true;
-                                                break;
+                                        if (str_contains($fieldName, 'tanggal') && $fieldValue && $fieldValue !== '-') {
+                                            try {
+                                                $fieldValue = \Carbon\Carbon::parse($fieldValue)->format('d/m/Y');
+                                            } catch (\Exception $e) {
+                                                // Keep original
                                             }
                                         }
-                                        
-                                        if (!$isImageField) {
-                                            $imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
-                                            foreach ($imageExtensions as $ext) {
-                                                if (str_ends_with(strtolower($fieldValue), $ext)) {
-                                                    $isImageField = true;
-                                                    break;
+
+                                        // Cek apakah field gambar atau PDF
+                                        $isImageField = false;
+                                        $isPdfField = false;
+                                        $fileUrl = null;
+
+                                        if ($fieldValue && $fieldValue !== '-') {
+                                            // ✅ FIX: Generate URL yang benar untuk semua jenis file
+
+                                            // Cek apakah ini file (PDF atau gambar)
+                                            $isPdfField = str_ends_with(strtolower($fieldValue), '.pdf');
+
+                                            // Cek apakah ini gambar
+                                            $isImageField = false;
+                                            if (!$isPdfField) {
+                                                $imageKeywords = ['foto', 'gambar', 'image', 'photo', 'picture', 'realisasi'];
+                                                foreach ($imageKeywords as $keyword) {
+                                                    if (str_contains(strtolower($fieldName), $keyword)) {
+                                                        $isImageField = true;
+                                                        break;
+                                                    }
+                                                }
+
+                                                if (!$isImageField) {
+                                                    $imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+                                                    foreach ($imageExtensions as $ext) {
+                                                        if (str_ends_with(strtolower($fieldValue), $ext)) {
+                                                            $isImageField = true;
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            // CARI YANG INI:
+                                            if ($isPdfField || $isImageField) {
+                                                $cleanFilename = trim($fieldValue);
+
+                                                try {
+                                                    // 🔥 CEK FILE ADA DULU SEBELUM GENERATE URL
+                                                    if (Storage::disk('private')->exists($cleanFilename)) {
+                                                        $fileUrl = route('private.file', ['path' => $cleanFilename]);
+                                                    } else {
+                                                        // File ga ada, tetap generate URL tapi log warning
+                                                        $fileUrl = route('private.file', ['path' => $cleanFilename]);
+
+                                                        \Log::warning('File missing for field', [
+                                                            'field_name' => $fieldName,
+                                                            'expected_path' => $cleanFilename,
+                                                            'full_path' => Storage::disk('private')->path($cleanFilename),
+                                                            'available_files' => Storage::disk('private')->files('summary-reports'),
+                                                        ]);
+                                                    }
+
+                                                    \Log::debug('Generated file URL:', [
+                                                        'field_name' => $fieldName,
+                                                        'field_value' => $fieldValue,
+                                                        'clean_filename' => $cleanFilename,
+                                                        'file_url' => $fileUrl,
+                                                        'exists' => Storage::disk('private')->exists($cleanFilename),
+                                                    ]);
+                                                } catch (\Exception $e) {
+                                                    \Log::error('Error generating file URL:', [
+                                                        'field_value' => $fieldValue,
+                                                        'error' => $e->getMessage()
+                                                    ]);
+                                                    $fileUrl = '#';
                                                 }
                                             }
                                         }
-                                    }
-                                    
-                                    // ✅ GENERATE URL YANG BENAR
-                                    if ($isPdfField || $isImageField) {
-                                        // Bersihkan filename dari karakter khusus
-                                        $cleanFilename = trim($fieldValue);
-                                        
-                                        // ✅ PASTIKAN: Route menggunakan 'path', bukan 'filename'
-                                        // dan handle jika ada subfolder
-                                        try {
-                                            $fileUrl = route('private.file', ['path' => $cleanFilename]);
-                                            
-                                            // Debug log (opsional, bisa dihapus setelah fix)
-                                            \Log::debug('Generated file URL:', [
-                                                'field_name' => $fieldName,
-                                                'field_value' => $fieldValue,
-                                                'clean_filename' => $cleanFilename,
-                                                'file_url' => $fileUrl,
-                                                'is_pdf' => $isPdfField,
-                                                'is_image' => $isImageField,
-                                            ]);
-                                        } catch (\Exception $e) {
-                                            // Fallback jika route error
-                                            \Log::error('Error generating file URL:', [
-                                                'field_value' => $fieldValue,
-                                                'error' => $e->getMessage()
-                                            ]);
-                                            $fileUrl = '#';
+
+                                        // ✅ Tentukan row class - hanya untuk field non-paten yang terverifikasi
+                                        $rowClass = '';
+                                        if (!$isPatenField && $isVerified) {
+                                            $rowClass = 'bg-green-50 dark:bg-green-900/20';
                                         }
-                                    }
-                                }
 
-                                    // ✅ Tentukan row class - hanya untuk field non-paten yang terverifikasi
-                                    $rowClass = '';
-                                    if (!$isPatenField && $isVerified) {
-                                        $rowClass = 'bg-green-50 dark:bg-green-900/20';
-                                    }
+                                        $html .= '<tr class="' . $rowClass . '">';
 
-                                    $html .= '<tr class="' . $rowClass . '">';
+                                        // Kolom No
+                                        $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center">' . $no . '</td>';
 
-                                    // Kolom No
-                                    $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center">' . $no . '</td>';
+                                        // Kolom Uraian
+                                        $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3 font-medium">';
+                                        $html .= htmlspecialchars($fieldLabel);
+                                        $html .= '</td>';
 
-                                    // Kolom Uraian
-                                    $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3 font-medium">';
-                                    $html .= htmlspecialchars($fieldLabel);
-                                    $html .= '</td>';
+                                        // Kolom Keterangan (dengan preview gambar/PDF)
+                                        $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3">';
 
-                                    // Kolom Keterangan (dengan preview gambar/PDF)
-                                    $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3">';
-                                    
-                                    if ($isPdfField && $fileUrl) {
-                                    // ✅ PREVIEW PDF
-                                    $html .= '<div class="space-y-3">';
-                                    
-                                    // Card PDF dengan icon
-                                    $html .= '<div class="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition cursor-pointer" onclick="previewPdf(\'' . $fileUrl . '\', \'' . htmlspecialchars(basename($fieldValue)) . '\')">';
-                                    $html .= '<div class="flex-shrink-0 p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">';
-                                    $html .= '<svg class="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">';
-                                    $html .= '<path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/>';
-                                    $html .= '<path d="M8 10a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/>';
-                                    $html .= '<path d="M8 13a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/>';
-                                    $html .= '</svg>';
-                                    $html .= '</div>';
-                                    $html .= '<div class="flex-1 min-w-0">';
-                                    $html .= '<div class="font-medium text-gray-900 dark:text-gray-100 truncate">' . htmlspecialchars(basename($fieldValue)) . '</div>';
-                                    $html .= '<div class="text-sm text-gray-500 dark:text-gray-400">PDF Document • Klik untuk preview</div>';
-                                    $html .= '</div>';
-                                    $html .= '</div>';
-                                    
-                                    // Action buttons - ✅ GANTI URL dengan yang sudah fix
-                                    $html .= '<div class="flex flex-wrap gap-2">';
-                                    $html .= '<button onclick="event.stopPropagation(); previewPdf(\'' . $fileUrl . '\', \'' . htmlspecialchars(basename($fieldValue)) . '\')" class="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition inline-flex items-center gap-1">';
-                                    $html .= '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>';
-                                    $html .= 'Preview';
-                                    $html .= '</button>';
-                                    $html .= '<a href="' . $fileUrl . '" target="_blank" class="px-3 py-1.5 text-sm font-medium bg-gray-600 text-white rounded hover:bg-gray-700 transition inline-flex items-center gap-1">';
-                                    $html .= '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>';
-                                    $html .= 'Buka Tab Baru';
-                                    $html .= '</a>';
-                                    $html .= '</div>';
-                                    
-                                    $html .= '</div>';
-                                    } elseif ($isImageField && $fileUrl) {
-                                        // PREVIEW GAMBAR
-                                        $html .= '<div class="flex items-center gap-3">';
-                                        
-                                        // ✅ GANTI: onclick openImageModal dengan URL yang sudah fix
-                                        $html .= '<img src="' . $fileUrl . '" ';
-                                        $html .= 'alt="Preview" ';
-                                        $html .= 'class="w-32 h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition" ';
-                                        $html .= 'onclick="openImageModal(\'' . $fileUrl . '\')" ';
-                                        $html .= 'onerror="console.error(\'Gagal load gambar: ' . $fileUrl . '\', this.src=\'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Crect fill=\'%23ddd\' width=\'100\' height=\'100\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\'%3ENo Image%3C/text%3E%3C/svg%3E\')"';
-                                        $html .= '>';
-                                        
-                                        $html .= '<div class="text-xs text-gray-500 dark:text-gray-400">';
-                                        $html .= '<a href="' . $fileUrl . '" target="_blank" class="text-primary-600 hover:underline">Lihat full</a>';
-                                        $html .= '<div class="mt-1">' . htmlspecialchars($fieldValue) . '</div>';
-                                        $html .= '</div>';
-                                        $html .= '</div>';
-                                    } else {
-                                        // Text biasa
-                                        $html .= htmlspecialchars($fieldValue ?? '-');
-                                    }
-                                    
-                                    $html .= '</td>';
+                                        if ($isPdfField && $fileUrl) {
+                                            // ✅ PREVIEW PDF
+                                            $html .= '<div class="space-y-3">';
 
-                                    // ✅ KOLOM VERIFIKASI - PERUBAHAN UTAMA DI SINI
-                                    $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center">';
+                                            // Card PDF dengan icon
+                                            $html .= '<div class="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition cursor-pointer" onclick="previewPdf(\'' . $fileUrl . '\', \'' . htmlspecialchars(basename($fieldValue)) . '\')">';
+                                            $html .= '<div class="flex-shrink-0 p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">';
+                                            $html .= '<svg class="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">';
+                                            $html .= '<path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/>';
+                                            $html .= '<path d="M8 10a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/>';
+                                            $html .= '<path d="M8 13a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/>';
+                                            $html .= '</svg>';
+                                            $html .= '</div>';
+                                            $html .= '<div class="flex-1 min-w-0">';
+                                            $html .= '<div class="font-medium text-gray-900 dark:text-gray-100 truncate">' . htmlspecialchars(basename($fieldValue)) . '</div>';
+                                            $html .= '<div class="text-sm text-gray-500 dark:text-gray-400">PDF Document • Klik untuk preview</div>';
+                                            $html .= '</div>';
+                                            $html .= '</div>';
 
-                                    if ($isPatenField) {
-                                        // ✅ FIELD PATEN: Tampilkan badge "Paten" tanpa checkbox
-                                        $html .= '<div class="flex items-center justify-center gap-2">';
-                                        $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100 border border-gray-300 dark:border-gray-700">';
-                                        $html .= '<svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>';
-                                        $html .= 'Paten';
-                                        $html .= '</span>';
-                                        $html .= '<span class="text-xs text-gray-500">(tidak diverifikasi)</span>';
-                                        $html .= '</div>';
-                                    } else {
-                                        // ✅ FIELD BIASA: Tampilkan checkbox verifikasi
-                                        $checkboxId = 'verify_' . $item['rombongan_item_id'] . '_' . $fieldName;
-                                        $checked = $isVerified ? 'checked' : '';
+                                            // Action buttons - ✅ GANTI URL dengan yang sudah fix
+                                            $html .= '<div class="flex flex-wrap gap-2">';
+                                            $html .= '<button onclick="event.stopPropagation(); previewPdf(\'' . $fileUrl . '\', \'' . htmlspecialchars(basename($fieldValue)) . '\')" class="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition inline-flex items-center gap-1">';
+                                            $html .= '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>';
+                                            $html .= 'Preview';
+                                            $html .= '</button>';
+                                            $html .= '<a href="' . $fileUrl . '" target="_blank" class="px-3 py-1.5 text-sm font-medium bg-gray-600 text-white rounded hover:bg-gray-700 transition inline-flex items-center gap-1">';
+                                            $html .= '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>';
+                                            $html .= 'Buka Tab Baru';
+                                            $html .= '</a>';
+                                            $html .= '</div>';
 
-                                        $html .= '<div class="flex items-center justify-center gap-3">';
+                                            $html .= '</div>';
+                                        } elseif ($isImageField && $fileUrl) {
+                                            // PREVIEW GAMBAR
+                                            $html .= '<div class="flex items-center gap-3">';
 
-                                        // Checkbox
-                                        $html .= '<label class="flex items-center cursor-pointer">';
-                                        $html .= '<input type="checkbox" ';
-                                        $html .= 'id="' . $checkboxId . '" ';
-                                        $html .= 'class="field-checkbox rounded border-gray-300 text-primary-600 focus:ring-primary-500" ';
-                                        $html .= 'data-rombongan-item-id="' . $item['rombongan_item_id'] . '" ';
-                                        $html .= 'data-field-name="' . $fieldName . '" ';
-                                        $html .= $checked . ' ';
-                                        $html .= 'onchange="handleVerificationChange(' . $item['rombongan_item_id'] . ', \'' . $fieldName . '\', this.checked)"';
-                                        $html .= '>';
-                                        $html .= '<span class="ml-2 text-sm">Verifikasi</span>';
-                                        $html .= '</label>';
+                                            // ✅ GANTI: onclick openImageModal dengan URL yang sudah fix
+                                            $html .= '<img src="' . $fileUrl . '" ';
+                                            $html .= 'alt="Preview" ';
+                                            $html .= 'class="w-32 h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition" ';
+                                            $html .= 'onclick="openImageModal(\'' . $fileUrl . '\')" ';
+                                            $html .= 'onerror="console.error(\'Gagal load gambar: ' . $fileUrl . '\', this.src=\'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Crect fill=\'%23ddd\' width=\'100\' height=\'100\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\'%3ENo Image%3C/text%3E%3C/svg%3E\')"';
+                                            $html .= '>';
 
-                                        // Badge
-                                        if ($isVerified) {
-                                            $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">';
-                                            $html .= '✓ Sudah';
-                                            $html .= '</span>';
+                                            $html .= '<div class="text-xs text-gray-500 dark:text-gray-400">';
+                                            $html .= '<a href="' . $fileUrl . '" target="_blank" class="text-primary-600 hover:underline">Lihat full</a>';
+                                            $html .= '<div class="mt-1">' . htmlspecialchars($fieldValue) . '</div>';
+                                            $html .= '</div>';
+                                            $html .= '</div>';
                                         } else {
-                                            $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">';
-                                            $html .= '○ Belum';
-                                            $html .= '</span>';
+                                            // Text biasa
+                                            $html .= htmlspecialchars($fieldValue ?? '-');
                                         }
 
-                                        $html .= '</div>';
+                                        $html .= '</td>';
+
+                                        // ✅ KOLOM VERIFIKASI - PERUBAHAN UTAMA DI SINI
+                                        $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center">';
+
+                                        if ($isPatenField) {
+                                            // ✅ FIELD PATEN: Tampilkan badge "Paten" tanpa checkbox
+                                            $html .= '<div class="flex items-center justify-center gap-2">';
+                                            $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100 border border-gray-300 dark:border-gray-700">';
+                                            $html .= '<svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>';
+                                            $html .= 'Paten';
+                                            $html .= '</span>';
+                                            $html .= '<span class="text-xs text-gray-500">(tidak diverifikasi)</span>';
+                                            $html .= '</div>';
+                                        } else {
+                                            // ✅ FIELD BIASA: Tampilkan checkbox verifikasi
+                                            $checkboxId = 'verify_' . $item['rombongan_item_id'] . '_' . $fieldName;
+                                            $checked = $isVerified ? 'checked' : '';
+
+                                            $html .= '<div class="flex items-center justify-center gap-3">';
+
+                                            // Checkbox
+                                            $html .= '<label class="flex items-center cursor-pointer">';
+                                            $html .= '<input type="checkbox" ';
+                                            $html .= 'id="' . $checkboxId . '" ';
+                                            $html .= 'class="field-checkbox rounded border-gray-300 text-primary-600 focus:ring-primary-500" ';
+                                            $html .= 'data-rombongan-item-id="' . $item['rombongan_item_id'] . '" ';
+                                            $html .= 'data-field-name="' . $fieldName . '" ';
+                                            $html .= $checked . ' ';
+                                            $html .= 'onchange="handleVerificationChange(' . $item['rombongan_item_id'] . ', \'' . $fieldName . '\', this.checked)"';
+                                            $html .= '>';
+                                            $html .= '<span class="ml-2 text-sm">Verifikasi</span>';
+                                            $html .= '</label>';
+
+                                            // Badge
+                                            if ($isVerified) {
+                                                $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">';
+                                                $html .= '✓ Sudah';
+                                                $html .= '</span>';
+                                            } else {
+                                                $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">';
+                                                $html .= '○ Belum';
+                                                $html .= '</span>';
+                                            }
+
+                                            $html .= '</div>';
+                                        }
+
+                                        $html .= '</td>';
+
+                                        // ✅ KOLOM CATATAN - Field paten tetap bisa ada catatan (opsional)
+                                        $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3">';
+
+                                        if ($isPatenField) {
+                                            // ✅ Untuk field paten: textarea readonly atau placeholder info
+                                            $html .= '<div class="text-center">';
+                                            $html .= '<span class="text-sm text-gray-500 italic">Field paten - tidak memerlukan catatan</span>';
+                                            $html .= '</div>';
+                                        } else {
+                                            // ✅ Untuk field biasa: textarea biasa
+                                            $html .= '<textarea ';
+                                            $html .= 'id="catatan_' . $item['rombongan_item_id'] . '_' . $fieldName . '" ';
+                                            $html .= 'class="w-full rounded border-gray-300 text-sm dark:bg-gray-800 dark:border-gray-600" ';
+                                            $html .= 'rows="2" ';
+                                            $html .= 'placeholder="Catatan untuk field ini..." ';
+                                            $html .= 'onblur="saveCatatan(' . $item['rombongan_item_id'] . ', \'' . $fieldName . '\', this.value)"';
+                                            $html .= '>' . htmlspecialchars($keterangan) . '</textarea>';
+                                        }
+
+                                        $html .= '</td>';
+
+                                        $html .= '</tr>';
+                                        $no++;
                                     }
-
-                                    $html .= '</td>';
-
-                                    // ✅ KOLOM CATATAN - Field paten tetap bisa ada catatan (opsional)
-                                    $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3">';
-                                    
-                                    if ($isPatenField) {
-                                        // ✅ Untuk field paten: textarea readonly atau placeholder info
-                                        $html .= '<div class="text-center">';
-                                        $html .= '<span class="text-sm text-gray-500 italic">Field paten - tidak memerlukan catatan</span>';
-                                        $html .= '</div>';
-                                    } else {
-                                        // ✅ Untuk field biasa: textarea biasa
-                                        $html .= '<textarea ';
-                                        $html .= 'id="catatan_' . $item['rombongan_item_id'] . '_' . $fieldName . '" ';
-                                        $html .= 'class="w-full rounded border-gray-300 text-sm dark:bg-gray-800 dark:border-gray-600" ';
-                                        $html .= 'rows="2" ';
-                                        $html .= 'placeholder="Catatan untuk field ini..." ';
-                                        $html .= 'onblur="saveCatatan(' . $item['rombongan_item_id'] . ', \'' . $fieldName . '\', this.value)"';
-                                        $html .= '>' . htmlspecialchars($keterangan) . '</textarea>';
-                                    }
-                                    
-                                    $html .= '</td>';
-
-                                    $html .= '</tr>';
-                                    $no++;
-                                }
                                     $html .= '</tbody>';
                                     $html .= '</table>';
                                     $html .= '</div>';
@@ -406,9 +413,9 @@ class RombonganVerifikatorResource extends Resource
                                     </div>
                                 </div>
                             </div>';
-                            
+
                             // Modal untuk preview PDF - ✅ FIX TIDAK REDIRECT
-                        $html .= '
+                            $html .= '
                         <div id="pdfModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4">
                             <div class="relative w-full max-w-6xl h-[90vh] bg-white dark:bg-gray-800 rounded-lg shadow-2xl overflow-hidden">
                                 <div class="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 border-b border-gray-300 dark:border-gray-600">
@@ -665,7 +672,7 @@ function openImageModal(imageUrl) {
 </script>
 JS;
 
-return new HtmlString($html);
+                            return new HtmlString($html);
                         }),
                 ]),
         ]);
@@ -674,7 +681,8 @@ return new HtmlString($html);
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => 
+            ->modifyQueryUsing(
+                fn(Builder $query) =>
                 $query->where('status_pengiriman', 'Terkirim ke Verifikator')
             )
             ->columns([
@@ -727,15 +735,16 @@ return new HtmlString($html);
                     ->color('warning')
                     ->visible(function ($record) {
                         $progress = $record->getVerificationProgress();
-                        return (int) $progress['percentage'] < 100 
+                        return (int) $progress['percentage'] < 100
                             && $record->status_pengiriman === 'Terkirim ke Verifikator';
                     })
                     ->requiresConfirmation()
                     ->modalHeading('Kirim ke Data Progres')
-                    ->modalDescription(fn($record) => 
-                        'Data rombongan "' . $record->nama_rombongan . '" belum lengkap (' . 
-                        $record->getVerificationProgress()['percentage'] . '%). ' .
-                        'Data akan dikirim ke OPD untuk diperbaiki.'
+                    ->modalDescription(
+                        fn($record) =>
+                        'Data rombongan "' . $record->nama_rombongan . '" belum lengkap (' .
+                            $record->getVerificationProgress()['percentage'] . '%). ' .
+                            'Data akan dikirim ke OPD untuk diperbaiki.'
                     )
                     ->modalSubmitActionLabel('Ya, Kirim ke OPD')
                     ->action(function ($record) {
@@ -762,14 +771,15 @@ return new HtmlString($html);
                     ->color('success')
                     ->visible(function ($record) {
                         $progress = $record->getVerificationProgress();
-                        return (int) $progress['percentage'] === 100 
+                        return (int) $progress['percentage'] === 100
                             && $record->status_pengiriman === 'Terkirim ke Verifikator';
                     })
                     ->requiresConfirmation()
                     ->modalHeading('Kirim ke Data Sudah Progres')
-                    ->modalDescription(fn($record) => 
+                    ->modalDescription(
+                        fn($record) =>
                         'Data rombongan "' . $record->nama_rombongan . '" sudah diverifikasi 100%. ' .
-                        'Data akan dikirim ke halaman Data Sudah Progres OPD.'
+                            'Data akan dikirim ke halaman Data Sudah Progres OPD.'
                     )
                     ->modalSubmitActionLabel('Ya, Kirim')
                     ->action(function ($record) {

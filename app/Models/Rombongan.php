@@ -22,12 +22,17 @@ class Rombongan extends Model
         'tanggal_verifikasi',
         'lolos_verif',
         'status_pengiriman',
+        'no_spm',
         'tanggal_masuk_verifikator',
+        'is_sent_to_monitoring',   
+        'tanggal_kirim_monitoring',
     ];
 
     protected $casts = [
         'tanggal_verifikasi' => 'datetime',
         'tanggal_masuk_verifikator' => 'datetime',
+        'is_sent_to_monitoring' => 'boolean',   
+        'tanggal_kirim_monitoring' => 'datetime',
         'lolos_verif' => 'boolean',
     ];
 
@@ -46,7 +51,7 @@ class Rombongan extends Model
     {
         static::addGlobalScope('opd_filter', function (Builder $builder) {
             $user = Auth::user();
-            
+
             if ($user && $user->hasRole('opd') && $user->opd_code) {
                 $builder->where('nama_opd', $user->opd_code);
             }
@@ -380,7 +385,7 @@ class Rombongan extends Model
     public function updateVerificationStatus(): void
     {
         $progress = $this->getVerificationProgress();
-        
+
         if ($progress['percentage'] === 100) {
             $this->update([
                 'status_verifikasi' => 'Sudah',
