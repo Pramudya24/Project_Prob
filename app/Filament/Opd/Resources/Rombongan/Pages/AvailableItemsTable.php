@@ -4,9 +4,9 @@ namespace App\Filament\Opd\Resources\Rombongan\Pages;
 
 use Filament\Widgets\Widget;
 use App\Models\Pl;
-use App\Models\Tender;
-use App\Models\Epurcasing;
-use App\Models\Swakelola;
+use App\Models\tender;
+use App\Models\epurcasing;
+use App\Models\swakelola;
 use App\Models\nontender;
 use App\Models\PengadaanDarurat;
 use App\Models\Rombongan;
@@ -29,7 +29,7 @@ class AvailableItemsTable extends Widget
 
     protected function loadRecords(): Collection
     {
-        // ✅ Ambil SEMUA item yang sudah ada di SEMUA rombongan
+        // âœ… Ambil SEMUA item yang sudah ada di SEMUA rombongan
         $existingItems = \App\Models\RombonganItem::all()
             ->map(fn($item) => $item->item_type . '_' . $item->item_id)
             ->toArray();
@@ -54,7 +54,7 @@ class AvailableItemsTable extends Widget
                 $items = $modelClass::all();
                 
                 foreach ($items as $item) {
-                    // ✅ Skip jika sudah ada di ROMBONGAN MANA PUN
+                    // âœ… Skip jika sudah ada di ROMBONGAN MANA PUN
                     $itemKey = $modelClass . '_' . $item->id;
                     if (in_array($itemKey, $existingItems)) {
                         continue;
@@ -112,11 +112,11 @@ class AvailableItemsTable extends Widget
         $result = $rombongan->addItem($itemType, $itemId);
 
         if ($result) {
-            // ✅ REFRESH KEDUA TABLE
+            // âœ… REFRESH KEDUA TABLE
             $this->dispatch('refreshRombonganItems');
             $this->dispatch('refreshAvailableItems');
             
-            // ✅ NOTIFIKASI
+            // âœ… NOTIFIKASI
             \Filament\Notifications\Notification::make()
                 ->title('Berhasil!')
                 ->body('Data berhasil ditambahkan ke rombongan')
@@ -155,4 +155,3 @@ class AvailableItemsTable extends Widget
         ];
     }
 }
-

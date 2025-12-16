@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Verifikator\Widgets;
+namespace App\Filament\Monitoring\Widgets;
 
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -12,11 +12,11 @@ use App\Models\swakelola;
 use App\Models\tender;
 use Illuminate\Support\Facades\DB;
 
-class VerifikatorStatsWidget extends BaseWidget
+class MonitoringStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        \Log::info('VerifikatorStatsWidget loaded');
+        \Log::info('MonitoringStatsWidget loaded');
         // Hitung total dari SEMUA OPD (tanpa filter user)
         $totalEpurcasing = epurcasing::sum('nilai_kontrak') ?? 0;
         $totalEpurcasingData = epurcasing::count();

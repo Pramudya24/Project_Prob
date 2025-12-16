@@ -17,6 +17,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use App\Filament\Monitoring\Widgets\MonitoringStatsWidget;
 
 class MonitoringPanelProvider extends PanelProvider
 {
@@ -32,11 +33,11 @@ class MonitoringPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Monitoring/Resources'), for: 'App\\Filament\\Monitoring\\Resources')
             ->discoverPages(in: app_path('Filament/Monitoring/Pages'), for: 'App\\Filament\\Monitoring\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+            \App\Filament\Monitoring\Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Monitoring/Widgets'), for: 'App\\Filament\\Monitoring\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
+                MonitoringStatsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

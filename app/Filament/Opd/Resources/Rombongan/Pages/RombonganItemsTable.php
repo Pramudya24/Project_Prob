@@ -347,7 +347,7 @@ class RombonganItemsTable extends BaseWidget
                         ->required()
                         ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
                         ->maxSize(5120)
-                        
+                        ->directory('summary-reports')
                         ->downloadable()
                         ->openable()
                         ->helperText('Upload file JPG/PDF (Max: 5MB)'),
@@ -504,7 +504,7 @@ class RombonganItemsTable extends BaseWidget
                         ->required(fn(Forms\Get $get): bool => $get('serah_terima_pekerjaan') === 'BAST')
                         ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
                         ->maxSize(5120)
-                        
+                        ->directory('bast-documents')
                         ->downloadable()
                         ->openable()
                         ->visible(
@@ -706,7 +706,7 @@ class RombonganItemsTable extends BaseWidget
                         ->required()
                         ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
                         ->maxSize(5120)
-                        
+                        ->directory('realisasi')
                         ->downloadable()
                         ->openable()
                         ->helperText('Upload file JPG/PDF (Max: 5MB)'),
@@ -784,7 +784,7 @@ class RombonganItemsTable extends BaseWidget
                         ->required()
                         ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
                         ->maxSize(5120)
-                        
+                        ->directory('realisasi')
                         ->downloadable()
                         ->openable()
                         ->helperText('Upload file JPG/PDF (Max: 5MB)'),
@@ -1127,7 +1127,7 @@ class RombonganItemsTable extends BaseWidget
                                 ->required()
                                 ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
                                 ->maxSize(5120)
-                                
+                                ->directory('realisasi')
                                 ->downloadable()
                                 ->openable()
                                 ->helperText('Upload file JPG/PDF (Max: 5MB)'),
@@ -1211,10 +1211,10 @@ class RombonganItemsTable extends BaseWidget
     {
         return match ($type) {
             'App\Models\Pl' => 'Non Tender',
-            'App\Models\Tender' => 'Tender',
-            'App\Models\Epurcasing' => 'Epurcasing',
-            'App\Models\Swakelola' => 'Pencatatan Swakelola',
-            'App\Models\Nontender' => 'Pencatatan Non Tender',
+            'App\Models\tender' => 'Tender',
+            'App\Models\epurcasing' => 'Epurcasing',
+            'App\Models\swakelola' => 'Pencatatan Swakelola',
+            'App\Models\nontender' => 'Pencatatan Non Tender',
             'App\Models\PengadaanDarurat' => 'Pencatatan Pengadaan Darurat',
             
             default => 'Unknown'

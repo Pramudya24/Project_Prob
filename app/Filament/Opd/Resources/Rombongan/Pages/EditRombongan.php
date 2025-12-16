@@ -802,9 +802,9 @@ class EditRombongan extends EditRecord
     {
         return match ($type) {
             'App\Models\Pl' => 'Non Tender',
-            'App\Models\Tender' => 'Tender',
-            'App\Models\Epurcasing' => 'E-Purchasing',
-            'App\Models\Swakelola' => 'Swakelola',
+            'App\Models\tender' => 'Tender',
+            'App\Models\epurcasing' => 'E-Purchasing',
+            'App\Models\swakelola' => 'Swakelola',
             'App\Models\PengadaanDarurat' => 'Pengadaan Darurat',
             'App\Models\nontender' => 'Pencatatan Non Tender',
             default => 'Unknown'

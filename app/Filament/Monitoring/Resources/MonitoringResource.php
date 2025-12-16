@@ -17,6 +17,7 @@ class MonitoringResource extends Resource
     protected static ?string $navigationLabel = 'Data Monitoring';
     protected static ?string $modelLabel = 'Data Monitoring';
     protected static ?string $pluralModelLabel = 'Data Monitoring';
+    protected static ?int $navigationSort = 2;
 
     public static function table(Table $table): Table
     {
