@@ -309,7 +309,7 @@ class EpurcasingResource extends Resource
                             ->disabled(), // Menonaktifkan field
                     ])
                     ->columns(2),
-            ])->preserveFilenames();
+            ]);
     }
 
     public static function table(Table $table): Table

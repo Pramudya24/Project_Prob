@@ -297,7 +297,7 @@ class TenderResource extends Resource
                             ->native(false),
                     ])
                     ->columns(2),
-            ])->preserveFilenames();
+            ]);
     }
 
     public static function table(Table $table): Table

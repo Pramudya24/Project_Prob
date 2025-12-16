@@ -271,7 +271,7 @@ class NonTenderResource extends Resource
 
                     ])
                     ->columns(2),
-            ])->preserveFilenames();
+            ]);
     }
 
     public static function table(Table $table): Table

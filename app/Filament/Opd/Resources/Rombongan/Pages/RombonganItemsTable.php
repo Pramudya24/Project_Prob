@@ -136,27 +136,27 @@ class RombonganItemsTable extends BaseWidget
             ];
         }
         // âœ… FORM UMUM UNTUK SEMUA JENIS DATA
-        $commonFields = [
-            Forms\Components\TextInput::make('nama_pekerjaan')
-                ->label('Nama Pekerjaan')
-                ->required()
-                ->default($item->nama_pekerjaan ?? ''),
+        // $commonFields = [
+        //     Forms\Components\TextInput::make('nama_pekerjaan')
+        //         ->label('Nama Pekerjaan')
+        //         ->required()
+        //         ->default($item->nama_pekerjaan ?? ''),
 
-            Forms\Components\TextInput::make('kode_rup')
-                ->label('Kode RUP')
-                ->default($item->kode_rup ?? ''),
+        //     Forms\Components\TextInput::make('kode_rup')
+        //         ->label('Kode RUP')
+        //         ->default($item->kode_rup ?? ''),
 
-            Forms\Components\TextInput::make('pagu_rup')
-                ->label('Pagu RUP')
-                ->numeric()
-                ->default($item->pagu_rup ?? 0),
+        //     Forms\Components\TextInput::make('pagu_rup')
+        //         ->label('Pagu RUP')
+        //         ->numeric()
+        //         ->default($item->pagu_rup ?? 0),
 
-            Forms\Components\TextInput::make('nilai_kontrak')
-                ->label('Nilai Kontrak')
-                ->numeric()
-                ->required()
-                ->default($item->nilai_kontrak ?? 0),
-        ];
+        //     Forms\Components\TextInput::make('nilai_kontrak')
+        //         ->label('Nilai Kontrak')
+        //         ->numeric()
+        //         ->required()
+        //         ->default($item->nilai_kontrak ?? 0),
+        // ];
 
         // âœ… FIELD TAMBAHAN BERDASARKAN JENIS DATA
         $additionalFields = match ($record->item_type) {
@@ -169,7 +169,7 @@ class RombonganItemsTable extends BaseWidget
             default => []
         };
 
-        return array_merge($commonFields, $additionalFields);
+        return array_merge($additionalFields);
     }
 
     // âœ… FIELD KHUSUS UNTUK PL - HANYA FIELD TAMBAHAN SAJA

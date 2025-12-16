@@ -689,14 +689,6 @@ class EditRombongan extends EditRecord
                 case 'App\Models\nontender':
                     $this->updateNonTenderData($item, $data);
                     break;
-                default:
-                    // Update dasar untuk jenis data lainnya
-                    $item->update([
-                        'nama_pekerjaan' => $data['nama_pekerjaan'],
-                        'kode_rup' => $data['kode_rup'],
-                        'pagu_rup' => $data['pagu_rup'],
-                        'nilai_kontrak' => $data['nilai_kontrak'],
-                    ]);
             }
 
             \Filament\Notifications\Notification::make()

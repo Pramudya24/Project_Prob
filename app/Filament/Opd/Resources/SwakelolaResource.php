@@ -121,7 +121,7 @@ class SwakelolaResource extends Resource
                             ->placeholder('0')
                             ->columnSpanFull(),
                     ]),
-            ])->preserveFilenames();
+            ]);
     }
 
     public static function table(Table $table): Table
