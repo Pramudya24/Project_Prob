@@ -23,6 +23,9 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        // Path ke logo - GANTI DENGAN PATH LOGO ANDA
+        $logoPath = asset('images/logo.jpg'); // atau 'logo.png'
+        
         return $panel
             ->default()
             ->id('admin')
@@ -31,7 +34,9 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Blue,
             ])
-            // ->viteTheme('resources/css/filament/admin/theme.css')
+            ->brandLogo($logoPath) // Logo untuk halaman login (optional)
+            ->brandLogoHeight('2.5rem')
+            ->brandName('SIVERA')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
@@ -62,13 +67,40 @@ class AdminPanelProvider extends PanelProvider
                     ->url(fn() => route('filament.admin.pages.menu-baru'))
                     ->visible(fn() => false),
             ])
-            // Tambahkan render hook ini untuk custom CSS
+            // 1. CUSTOM HEADER DENGAN LOGO (SIDEBAR HEADER)
+            ->renderHook(
+                'panels::sidebar.header',
+                fn () => <<<HTML
+                <div class="flex items-center gap-3 px-6 py-4">
+                    <!-- Logo -->
+                    <div class="flex-shrink-0">
+                        <img 
+                            src="$logoPath" 
+                            alt="SIVERA Logo" 
+                            class="h-10 w-10 object-contain rounded"
+                            onerror="this.style.display='none'; console.log('Logo gagal dimuat: $logoPath')"
+                        />
+                    </div>
+                    
+                    <!-- Nama Aplikasi -->
+                    <div class="flex flex-col">
+                        <span class="text-xl font-bold text-white">
+                            SIVERA
+                        </span>
+                        <span class="text-xs text-gray-300">
+                            Procurement System
+                        </span>
+                    </div>
+                </div>
+                HTML
+            )
+            // 2. CUSTOM CSS (untuk warna menu)
             ->renderHook(
                 'panels::styles.after',
                 fn () => <<<'HTML'
                 <style>
-                    /* Force override warna sidebar */
-                    span.fi-sidebar-item-label.flex-1.truncate.text-sm.font-medium.text-gray-700.dark\:text-gray-200 {
+                    /* Warna teks menu sidebar */
+                    .fi-sidebar-nav span.fi-sidebar-item-label {
                         color: #10b981 !important;
                     }
                     
@@ -80,13 +112,21 @@ class AdminPanelProvider extends PanelProvider
                         color: #3b82f6 !important;
                     }
                     
-                    /* Override untuk semua state */
-                    .fi-sidebar-nav span.fi-sidebar-item-label {
-                        color: #10b981 !important;
+                    /* Pastikan header sidebar tidak ada margin aneh */
+                    .fi-sidebar-header {
+                        margin: 0 !important;
+                        padding: 1.5rem !important;
+                        border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+                    }
+                    
+                    /* Sembunyikan default Filament logo jika ada */
+                    .fi-sidebar-header .fi-logo {
+                        display: none !important;
                     }
                 </style>
                 HTML
             )
+            // 3. HOOK LAIN YANG SUDAH ADA (jangan dihapus)
             ->renderHook(
                 'panels::body.end',
                 fn () => view('filament.hooks.sidebar-tooltips')
