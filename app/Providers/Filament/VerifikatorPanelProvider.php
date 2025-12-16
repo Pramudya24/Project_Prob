@@ -17,6 +17,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use App\Filament\Verifikator\Widgets\VerifikatorStatsWidget;
 
 class VerifikatorPanelProvider extends PanelProvider
 {
@@ -33,11 +34,11 @@ class VerifikatorPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Verifikator/Resources'), for: 'App\\Filament\\Verifikator\\Resources')
             ->discoverPages(in: app_path('Filament/Verifikator/Pages'), for: 'App\\Filament\\Verifikator\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+            \App\Filament\Verifikator\Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Verifikator/Widgets'), for: 'App\\Filament\\Verifikator\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
+                VerifikatorStatsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

@@ -13,7 +13,7 @@ class Dashboard extends BaseDashboard
     public function getWidgets(): array
     {
         return [
-            \App\Filament\Verifikator\Widgets\FinancialStatsOverview::class,
+            \App\Filament\Verifikator\Widgets\VerifikatorStatsWidget::class,
         ];
     }
 
