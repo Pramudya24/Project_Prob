@@ -203,6 +203,7 @@ class EpurcasingResource extends Resource
                                                 Forms\Components\TextInput::make('persentase_tkdn')
                                                     ->label('Persentase TKDN')
                                                     ->rule('numeric')
+                                                    ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                                                     ->extraInputAttributes([
                                                         'pattern' => '[0-9]*',
                                                         'inputmode' => 'numeric',

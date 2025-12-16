@@ -68,27 +68,27 @@ class RombonganItemsTable extends BaseWidget
                     ->sortable(),
             ])
             ->actions([
-                Tables\Actions\Action::make('edit')
-                    ->label('Edit Data')
-                    ->icon('heroicon-o-pencil')
-                    ->color('primary')
-                    ->modalHeading(fn($record) => 'Edit Data: ' . ($record->item->nama_pekerjaan ?? $this->getTypeLabel($record->item_type)))
-                    ->modalSubmitActionLabel('Simpan Perubahan')
-                    ->form(function ($record) {
-                        return $this->getEditFormSchema($record);
-                    })
-                    ->action(function ($record, array $data) {
-                        $this->updateItemData($record, $data);
-                    }),
+                // Tables\Actions\Action::make('edit')
+                //     ->label('Edit Data')
+                //     ->icon('heroicon-o-pencil')
+                //     ->color('primary')
+                //     ->modalHeading(fn($record) => 'Edit Data: ' . ($record->item->nama_pekerjaan ?? $this->getTypeLabel($record->item_type)))
+                //     ->modalSubmitActionLabel('Simpan Perubahan')
+                //     ->form(function ($record) {
+                //         return $this->getEditFormSchema($record);
+                //     })
+                //     ->action(function ($record, array $data) {
+                //         $this->updateItemData($record, $data);
+                //     }),
 
-                Tables\Actions\Action::make('view')
-                    ->label('Lihat Detail')
-                    ->icon('heroicon-o-eye')
-                    ->color('gray')
-                    ->modalHeading(fn($record) => 'Detail Data: ' . ($record->item->nama_pekerjaan ?? $this->getTypeLabel($record->item_type)))
-                    ->form(function ($record) {
-                        return $this->getViewFormSchema($record);
-                    }),
+                // Tables\Actions\Action::make('view')
+                //     ->label('Lihat Detail')
+                //     ->icon('heroicon-o-eye')
+                //     ->color('gray')
+                //     ->modalHeading(fn($record) => 'Detail Data: ' . ($record->item->nama_pekerjaan ?? $this->getTypeLabel($record->item_type)))
+                //     ->form(function ($record) {
+                //         return $this->getViewFormSchema($record);
+                //     }),
 
                 Tables\Actions\Action::make('delete')
                     ->label('Keluarkan')
@@ -136,27 +136,27 @@ class RombonganItemsTable extends BaseWidget
             ];
         }
         // âœ… FORM UMUM UNTUK SEMUA JENIS DATA
-        // $commonFields = [
-        //     Forms\Components\TextInput::make('nama_pekerjaan')
-        //         ->label('Nama Pekerjaan')
-        //         ->required()
-        //         ->default($item->nama_pekerjaan ?? ''),
+        $commonFields = [
+            Forms\Components\TextInput::make('nama_pekerjaan')
+                ->label('Nama Pekerjaan')
+                ->required()
+                ->default($item->nama_pekerjaan ?? ''),
 
-        //     Forms\Components\TextInput::make('kode_rup')
-        //         ->label('Kode RUP')
-        //         ->default($item->kode_rup ?? ''),
+            Forms\Components\TextInput::make('kode_rup')
+                ->label('Kode RUP')
+                ->default($item->kode_rup ?? ''),
 
-        //     Forms\Components\TextInput::make('pagu_rup')
-        //         ->label('Pagu RUP')
-        //         ->numeric()
-        //         ->default($item->pagu_rup ?? 0),
+            Forms\Components\TextInput::make('pagu_rup')
+                ->label('Pagu RUP')
+                ->numeric()
+                ->default($item->pagu_rup ?? 0),
 
-        //     Forms\Components\TextInput::make('nilai_kontrak')
-        //         ->label('Nilai Kontrak')
-        //         ->numeric()
-        //         ->required()
-        //         ->default($item->nilai_kontrak ?? 0),
-        // ];
+            Forms\Components\TextInput::make('nilai_kontrak')
+                ->label('Nilai Kontrak')
+                ->numeric()
+                ->required()
+                ->default($item->nilai_kontrak ?? 0),
+        ];
 
         // âœ… FIELD TAMBAHAN BERDASARKAN JENIS DATA
         $additionalFields = match ($record->item_type) {
@@ -169,7 +169,7 @@ class RombonganItemsTable extends BaseWidget
             default => []
         };
 
-        return array_merge($additionalFields);
+        return array_merge($commonFields,$additionalFields);
     }
 
     // âœ… FIELD KHUSUS UNTUK PL - HANYA FIELD TAMBAHAN SAJA

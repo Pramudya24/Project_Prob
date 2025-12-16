@@ -25,12 +25,7 @@ class EditRombongan extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('view')
-                ->label('Lihat Detail Rombongan')
-                ->icon('heroicon-o-eye')
-                ->color('gray')
-                ->url(fn() => RombonganResource::getUrl('view', ['record' => $this->record])),
-
+            
             Actions\DeleteAction::make()
                 ->label('Hapus Rombongan'),
         ];
