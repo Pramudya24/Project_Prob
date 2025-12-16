@@ -33,7 +33,7 @@ class RombonganItemsTable extends BaseWidget
                 fn(): Builder => RombonganItem::where('rombongan_id', $this->rombonganId)
                     ->with(['item'])
             )
-            // ->poll('1s') // ✅ TAMBAHKAN INI - Auto refresh setiap 3 detik
+            // ->poll('1s') // âœ… TAMBAHKAN INI - Auto refresh setiap 3 detik
             ->columns([
                 Tables\Columns\TextColumn::make('item_type')
                     ->label('Jenis Data')
@@ -97,11 +97,11 @@ class RombonganItemsTable extends BaseWidget
                     ->action(function ($record) {
                         $record->delete();
                         
-                        // ✅ Dispatch event untuk refresh kedua table
+                        // âœ… Dispatch event untuk refresh kedua table
                         $this->dispatch('refreshRombonganItems');
                         $this->dispatch('refreshAvailableItems');
                         
-                        // ✅ Notifikasi
+                        // âœ… Notifikasi
                         \Filament\Notifications\Notification::make()
                             ->title('Data dikeluarkan')
                             ->body('Data berhasil dikeluarkan dari rombongan')
@@ -111,10 +111,10 @@ class RombonganItemsTable extends BaseWidget
                     ->requiresConfirmation()
                     ->modalHeading('Keluarkan dari Rombongan')
                     ->modalDescription('Apakah Anda yakin ingin mengeluarkan data ini dari rombongan?')
-                    ->modalSubmitActionLabel('Ya, Keluarkan'),
+                    ->modalSubmitActionLabel('Ya,Â Keluarkan'),
             ])
             ->emptyStateHeading('Belum ada data dalam rombongan')
-            ->emptyStateDescription('Tambahkan data pekerjaan dari tab "Data Tersedia".') // ✅ UPDATE DESCRIPTION
+            ->emptyStateDescription('Tambahkan data pekerjaan dari tab "Data Tersedia".') // âœ… UPDATE DESCRIPTION
             ->emptyStateIcon('heroicon-o-document')
             ->emptyStateActions([
             ])
@@ -135,7 +135,7 @@ class RombonganItemsTable extends BaseWidget
                     ->content('Data tidak ditemukan atau telah dihapus.'),
             ];
         }
-        // ✅ FORM UMUM UNTUK SEMUA JENIS DATA
+        // âœ… FORM UMUM UNTUK SEMUA JENIS DATA
         $commonFields = [
             Forms\Components\TextInput::make('nama_pekerjaan')
                 ->label('Nama Pekerjaan')
@@ -158,7 +158,7 @@ class RombonganItemsTable extends BaseWidget
                 ->default($item->nilai_kontrak ?? 0),
         ];
 
-        // ✅ FIELD TAMBAHAN BERDASARKAN JENIS DATA
+        // âœ… FIELD TAMBAHAN BERDASARKAN JENIS DATA
         $additionalFields = match ($record->item_type) {
             'App\Models\Pl' => $this->getPlFields($item),
             'App\Models\Tender' => $this->getTenderFields($item),
@@ -172,7 +172,7 @@ class RombonganItemsTable extends BaseWidget
         return array_merge($commonFields, $additionalFields);
     }
 
-    // ✅ FIELD KHUSUS UNTUK PL - HANYA FIELD TAMBAHAN SAJA
+    // âœ… FIELD KHUSUS UNTUK PL - HANYA FIELD TAMBAHAN SAJA
     private function getPlFields($item): array
     {
         return [
@@ -289,7 +289,7 @@ class RombonganItemsTable extends BaseWidget
         ];
     }
 
-    // ✅ FIELD KHUSUS UNTUK TENDER
+    // âœ… FIELD KHUSUS UNTUK TENDER
     private function getTenderFields($item): array
     {
         return [
@@ -531,7 +531,7 @@ class RombonganItemsTable extends BaseWidget
         ];
     }
 
-    // ✅ FIELD KHUSUS UNTUK E-PURCHASING
+    // âœ… FIELD KHUSUS UNTUK E-PURCHASING
     private function getEpurcasingFields($item): array
     {
         return [
@@ -648,7 +648,7 @@ class RombonganItemsTable extends BaseWidget
         ];
     }
 
-    // ✅ FIELD KHUSUS UNTUK SWAKELOLA
+    // âœ… FIELD KHUSUS UNTUK SWAKELOLA
     private function getSwakelolaFields($item): array
     {
         return [
@@ -726,7 +726,7 @@ class RombonganItemsTable extends BaseWidget
         ];
     }
 
-    // ✅ FIELD KHUSUS UNTUK SWAKELOLA
+    // âœ… FIELD KHUSUS UNTUK SWAKELOLA
     private function getPengadaanDaruratFields($item): array
     {
         return [
@@ -932,7 +932,7 @@ class RombonganItemsTable extends BaseWidget
         ];
     }
 
-    // ✅ FIELD KHUSUS UNTUK SWAKELOLA
+    // âœ… FIELD KHUSUS UNTUK SWAKELOLA
     private function getnontenderFields($item): array
     {
         return [
@@ -1177,7 +1177,7 @@ class RombonganItemsTable extends BaseWidget
         $item = $record->item;
 
         if ($item) {
-            // ✅ UPDATE SEMUA FIELD YANG ADA DI FORM PL
+            // âœ… UPDATE SEMUA FIELD YANG ADA DI FORM PL
             $updateData = [
                 // Field umum
                 'nama_pekerjaan' => $data['nama_pekerjaan'],

@@ -2,8 +2,9 @@
 
 namespace App\Providers;
 
-use Livewire\Livewire;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
+use Filament\Support\Facades\FilamentView;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,8 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \Livewire\Livewire::component('available-items-table', 
-            \App\Filament\Opd\Resources\Rombongan\Pages\AvailableItemsTable::class
+        FilamentView::registerRenderHook(
+                'panels::auth.login.form.after',
+            fn (): string => Blade::render('@vite(\'resources/css/custom-login.css\')'),
         );
     }
+
 }
