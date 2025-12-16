@@ -27,6 +27,7 @@ class Tender extends Model
         'nilai_kontrak',
         'pdn_tkdn_impor',
         'nilai_pdn_tkdn_impor',
+        'persentase_tkdn',
         'umk_non_umk',
         'nilai_umk',
         'serah_terima_pekerjaan',

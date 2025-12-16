@@ -20,7 +20,7 @@ class TenderResource extends Resource
     protected static ?string $navigationLabel = 'Tender';
     protected static ?string $pluralModelLabel = 'Data Tender';
     protected static ?int $navigationSort = 7;
-    
+
 
     public static function getModelLabel(): string
     {
@@ -51,20 +51,20 @@ class TenderResource extends Resource
                             ->label('Kode RUP')
                             ->required()
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ]),
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ]),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
                             ->required()
                             ->rule('numeric')
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ])
                             ->prefix('Rp'),
 
                         Forms\Components\TextInput::make('kode_paket')
@@ -93,7 +93,10 @@ class TenderResource extends Resource
                             ->required()
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
                             ->maxSize(5120)
-                            ->directory('summary-reports')
+                            ->disk('private')
+                            ->directory('summary_reports')
+                            ->preserveFilenames()
+                            ->visibility('private')
                             ->downloadable()
                             ->openable()
                             ->helperText('Upload file JPG/PDF (Max: 5MB)'),
@@ -105,12 +108,12 @@ class TenderResource extends Resource
                         Forms\Components\TextInput::make('nilai_kontrak')
                             ->label('Nilai Kontrak')
                             ->rule('numeric')
-                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
+                            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ])
                             ->required()
                             ->live(onBlur: true)
                             ->prefix('Rp')
@@ -168,7 +171,7 @@ class TenderResource extends Resource
                                     ->schema([
                                         Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
                                             ->label('Nilai IMPOR')
-                                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
+                                            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
@@ -182,12 +185,12 @@ class TenderResource extends Resource
                                             ->schema([
                                                 Forms\Components\TextInput::make('persentase_tkdn')
                                                     ->label('Persentase TKDN')
-                                                    ->rule('numeric')   
+                                                    ->rule('numeric')
                                                     ->extraInputAttributes([
                                                         'pattern' => '[0-9]*',
                                                         'inputmode' => 'numeric',
                                                         'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                                    ])                                                 
+                                                    ])
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
@@ -221,7 +224,7 @@ class TenderResource extends Resource
                                 Forms\Components\Fieldset::make('UMK / Non UMK')
                                     ->schema([
                                         Forms\Components\Radio::make('umk_non_umk')
-                                        ->label('Pilih salah satu')
+                                            ->label('Pilih salah satu')
                                             ->required()
                                             ->options([
                                                 'UMK' => 'UMK',
@@ -243,7 +246,7 @@ class TenderResource extends Resource
 
                                 Forms\Components\TextInput::make('nilai_umk')
                                     ->label('Nilai UMK')
-                                    ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
+                                    ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                                     ->numeric()
                                     ->disabled()
                                     ->dehydrated()
@@ -270,7 +273,10 @@ class TenderResource extends Resource
                             ->required(fn(Forms\Get $get): bool => $get('serah_terima_pekerjaan') === 'BAST')
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
                             ->maxSize(5120)
+                            ->disk('private')
                             ->directory('BAST')
+                            ->preserveFilenames()
+                            ->visibility('private')
                             ->downloadable()
                             ->openable()
                             ->visible(
@@ -291,7 +297,7 @@ class TenderResource extends Resource
                             ->native(false),
                     ])
                     ->columns(2),
-            ]);
+            ])->preserveFilenames();
     }
 
     public static function table(Table $table): Table

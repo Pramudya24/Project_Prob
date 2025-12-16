@@ -16,7 +16,7 @@ class ListRombonganVerifikators extends ListRecords
 {
     protected static string $resource = RombonganVerifikatorResource::class;
 
-     protected static ?string $pollingInterval = '5s';
+    protected static ?string $pollingInterval = '5s';
 
     public string $opdSelected = '';
 

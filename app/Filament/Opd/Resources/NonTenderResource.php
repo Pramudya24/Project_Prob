@@ -22,7 +22,7 @@ class NonTenderResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
-    
+
     public static function getModelLabel(): string
     {
         return 'Data Pencatatan Non Tender';
@@ -55,11 +55,11 @@ class NonTenderResource extends Resource
                             ->required()
                             ->rule('numeric')
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ]),
-                            
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ]),
+
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
@@ -67,10 +67,10 @@ class NonTenderResource extends Resource
                             ->rule('numeric')
                             ->prefix('Rp')
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ]),
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ]),
 
                         Forms\Components\TextInput::make('kode_paket')
                             ->label('Kode Paket')
@@ -97,178 +97,181 @@ class NonTenderResource extends Resource
                             ->label('Metode Pengadaan')
                             ->options([
                                 'Dikecualikan' => 'Dikecualikan',
-                                'Pengadaan Langsung' => 'Pengadaan Langsung',
-                                'Penunjukan Langsung' => 'Penunjukan Langsung',
+                                'EPengadaan Langsung' => 'EPengadaan Langsung',
+                                'EPenunjukan Langsung' => 'EPenunjukan Langsung',
                             ])
                             ->native(false)
                             ->required(),
+                    ])
+                    ->columns(2),
+                Forms\Components\Section::make('Nilai Kontrak & Komponen')
+                    ->schema([
+                        Forms\Components\TextInput::make('nilai_kontrak')
+                            ->label('Nilai Kontrak')
+                            ->rule('numeric')
+                            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                            ->extraInputAttributes([
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
                             ])
-                            ->columns(2),
-                        Forms\Components\Section::make('Nilai Kontrak & Komponen')
+                            ->required()
+                            ->live(onBlur: true)
+                            ->prefix('Rp')
+                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                $pdnTkdnImpor = $get('pdn_tkdn_impor');
+                                $umkNonUmk = $get('umk_non_umk');
+
+                                if ($pdnTkdnImpor === 'IMPOR') {
+                                    $set('nilai_pdn_tkdn_impor', 0);
+                                } elseif ($pdnTkdnImpor) {
+                                    $set('nilai_pdn_tkdn_impor', $state);
+                                }
+
+                                if ($umkNonUmk === 'Non UMK') {
+                                    $set('nilai_umk', 0);
+                                } elseif ($umkNonUmk) {
+                                    $set('nilai_umk', $state);
+                                }
+                            })
+                            ->columnSpanFull(),
+
+                        Forms\Components\Grid::make()
                             ->schema([
-                                Forms\Components\TextInput::make('nilai_kontrak')
-                                    ->label('Nilai Kontrak')
-                                    ->rule('numeric')
-                                    ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
-                                    ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
-                                    ->required()
-                                    ->live(onBlur: true)
-                                    ->prefix('Rp')
-                                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                        $pdnTkdnImpor = $get('pdn_tkdn_impor');
-                                        $umkNonUmk = $get('umk_non_umk');
-
-                                        if ($pdnTkdnImpor === 'IMPOR') {
-                                            $set('nilai_pdn_tkdn_impor', 0);
-                                        } elseif ($pdnTkdnImpor) {
-                                            $set('nilai_pdn_tkdn_impor', $state);
-                                        }
-
-                                        if ($umkNonUmk === 'Non UMK') {
-                                            $set('nilai_umk', 0);
-                                        } elseif ($umkNonUmk) {
-                                            $set('nilai_umk', $state);
-                                        }
-                                    })
-                                    ->columnSpanFull(),
-
-                                Forms\Components\Grid::make()
+                                Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
                                     ->schema([
-                                        Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
-                                            ->schema([
-                                                Forms\Components\Radio::make('pdn_tkdn_impor')
-                                                ->label('Pilih salah satu')
-                                                    ->options([
-                                                        'PDN' => 'PDN',
-                                                        'TKDN' => 'TKDN',
-                                                        'IMPOR' => 'IMPOR',
-                                                    ])
-                                                    ->required()
-                                                    ->live()
-                                                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                        $nilaiKontrak = $get('nilai_kontrak');
-                                                        if ($state === 'IMPOR') {
-                                                            $set('nilai_pdn_tkdn_impor', 0);
-                                                            $set('persentase_tkdn', null);
-                                                        } elseif ($state === 'PDN') {
-                                                            $set('nilai_pdn_tkdn_impor', $nilaiKontrak);
-                                                            $set('persentase_tkdn', null);
-                                                        } else {
-                                                            $set('nilai_pdn_tkdn_impor', 0);
-                                                            $set('persentase_tkdn', 0);
-                                                        }
-                                                    })
-                                                    ->inline()
-                                                    ->columnSpanFull(),
+                                        Forms\Components\Radio::make('pdn_tkdn_impor')
+                                            ->label('Pilih salah satu')
+                                            ->options([
+                                                'PDN' => 'PDN',
+                                                'TKDN' => 'TKDN',
+                                                'IMPOR' => 'IMPOR',
                                             ])
-                                            ->columnSpan(1),
-
-                                        Forms\Components\Group::make()
-                                            ->schema([
-                                                Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
-                                                    ->label('Nilai IMPOR')
-                                                    ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
-                                                    ->numeric()
-                                                    ->disabled()
-                                                    ->dehydrated()
-                                                    ->prefix('Rp')
-                                                    ->visible(
-                                                        fn(Forms\Get $get): bool =>
-                                                        in_array($get('pdn_tkdn_impor'), ['PDN', 'IMPOR'])
-                                                    ),
-
-                                                Forms\Components\Grid::make()
-                                                    ->schema([
-                                                        Forms\Components\TextInput::make('persentase_tkdn')
-                                                            ->label('Persentase TKDN')
-                                                            ->rule('numeric')
-                                                            ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
-                                                            ->suffix('%')
-                                                            ->minValue(0)
-                                                            ->maxValue(100)
-                                                            ->required()
-                                                            ->live(onBlur: true)
-                                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                                $nilaiKontrak = $get('nilai_kontrak');
-                                                                $persentase = $state ?: 0;
-                                                                $hasil = $nilaiKontrak * ($persentase / 100);
-                                                                $set('nilai_pdn_tkdn_impor', $hasil);
-                                                            }),
-
-                                                        Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
-                                                            ->label('Hasil TKDN')
-                                                            ->numeric()
-                                                            ->disabled()
-                                                            ->dehydrated()
-                                                            ->prefix('Rp'),
-                                                    ])
-                                                    ->columns(2)
-                                                    ->visible(
-                                                        fn(Forms\Get $get): bool =>
-                                                        $get('pdn_tkdn_impor') === 'TKDN'
-                                                    ),
-                                            ])
-                                            ->columnSpan(1),
+                                            ->required()
+                                            ->live()
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                $nilaiKontrak = $get('nilai_kontrak');
+                                                if ($state === 'IMPOR') {
+                                                    $set('nilai_pdn_tkdn_impor', 0);
+                                                    $set('persentase_tkdn', null);
+                                                } elseif ($state === 'PDN') {
+                                                    $set('nilai_pdn_tkdn_impor', $nilaiKontrak);
+                                                    $set('persentase_tkdn', null);
+                                                } else {
+                                                    $set('nilai_pdn_tkdn_impor', 0);
+                                                    $set('persentase_tkdn', 0);
+                                                }
+                                            })
+                                            ->inline()
+                                            ->columnSpanFull(),
                                     ])
-                                    ->columns(2),
+                                    ->columnSpan(1),
 
-                                Forms\Components\Grid::make()
+                                Forms\Components\Group::make()
                                     ->schema([
-                                        Forms\Components\Fieldset::make('UMK / Non UMK')
-                                            ->schema([
-                                                Forms\Components\Radio::make('umk_non_umk')
-                                                ->label('Pilih salah satu')
-                                                    ->options([
-                                                        'UMK' => 'UMK',
-                                                        'Non UMK' => 'Non UMK',
-                                                    ])
-                                                    ->required()
-                                                    ->live()
-                                                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                        $nilaiKontrak = $get('nilai_kontrak');
-                                                        if ($state === 'Non UMK') {
-                                                            $set('nilai_umk', 0);
-                                                        } elseif ($state) {
-                                                            $set('nilai_umk', $nilaiKontrak);
-                                                        }
-                                                    })
-                                                    ->inline()
-                                                    ->columnSpanFull(),
-                                            ])
-                                            ->columnSpan(1),
-
-                                        Forms\Components\TextInput::make('nilai_umk')
-                                            ->label('Nilai UMK')
-                                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
+                                        Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
+                                            ->label('Nilai IMPOR')
+                                            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
                                             ->prefix('Rp')
-                                            ->columnSpan(1),
+                                            ->visible(
+                                                fn(Forms\Get $get): bool =>
+                                                in_array($get('pdn_tkdn_impor'), ['PDN', 'IMPOR'])
+                                            ),
+
+                                        Forms\Components\Grid::make()
+                                            ->schema([
+                                                Forms\Components\TextInput::make('persentase_tkdn')
+                                                    ->label('Persentase TKDN')
+                                                    ->rule('numeric')
+                                                    ->extraInputAttributes([
+                                                        'pattern' => '[0-9]*',
+                                                        'inputmode' => 'numeric',
+                                                        'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                                    ])
+                                                    ->suffix('%')
+                                                    ->minValue(0)
+                                                    ->maxValue(100)
+                                                    ->required()
+                                                    ->live(onBlur: true)
+                                                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                        $nilaiKontrak = $get('nilai_kontrak');
+                                                        $persentase = $state ?: 0;
+                                                        $hasil = $nilaiKontrak * ($persentase / 100);
+                                                        $set('nilai_pdn_tkdn_impor', $hasil);
+                                                    }),
+
+                                                Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
+                                                    ->label('Hasil TKDN')
+                                                    ->numeric()
+                                                    ->disabled()
+                                                    ->dehydrated()
+                                                    ->prefix('Rp'),
+                                            ])
+                                            ->columns(2)
+                                            ->visible(
+                                                fn(Forms\Get $get): bool =>
+                                                $get('pdn_tkdn_impor') === 'TKDN'
+                                            ),
                                     ])
-                                    ->columns(2),
-                                Forms\Components\FileUpload::make('realisasi')
-                                    ->label('Realisasi')
-                                    ->required()
-                                    ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
-                                    ->maxSize(5120)
-                                    ->directory('realisasi')
-                                    ->downloadable()
-                                    ->openable()
-                                    ->helperText('Upload file JPG/PDF (Max: 5MB)'),
-                            
-                            
-                        ])
+                                    ->columnSpan(1),
+                            ])
+                            ->columns(2),
+
+                        Forms\Components\Grid::make()
+                            ->schema([
+                                Forms\Components\Fieldset::make('UMK / Non UMK')
+                                    ->schema([
+                                        Forms\Components\Radio::make('umk_non_umk')
+                                            ->label('Pilih salah satu')
+                                            ->options([
+                                                'UMK' => 'UMK',
+                                                'Non UMK' => 'Non UMK',
+                                            ])
+                                            ->required()
+                                            ->live()
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                $nilaiKontrak = $get('nilai_kontrak');
+                                                if ($state === 'Non UMK') {
+                                                    $set('nilai_umk', 0);
+                                                } elseif ($state) {
+                                                    $set('nilai_umk', $nilaiKontrak);
+                                                }
+                                            })
+                                            ->inline()
+                                            ->columnSpanFull(),
+                                    ])
+                                    ->columnSpan(1),
+
+                                Forms\Components\TextInput::make('nilai_umk')
+                                    ->label('Nilai UMK')
+                                    ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                                    ->numeric()
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->prefix('Rp')
+                                    ->columnSpan(1),
+                            ])
+                            ->columns(2),
+                        Forms\Components\FileUpload::make('realisasi')
+                            ->label('Realisasi')
+                            ->required()
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
+                            ->maxSize(5120)
+                            ->disk('private')
+                            ->directory('realisasi')
+                            ->preserveFilenames()
+                            ->visibility('private')
+                            ->downloadable()
+                            ->openable()
+                            ->helperText('Upload file JPG/PDF (Max: 5MB)'),
+
+
+                    ])
                     ->columns(2),
-            ]);
+            ])->preserveFilenames();
     }
 
     public static function table(Table $table): Table

@@ -5,7 +5,7 @@ namespace App\Models;
 enum MetodePengadaan: string
 {
     case DIKECUALIKAN = 'Dikecualikan';
-    case PENGADAAN_LANGSUNG = 'Pengadaan Langsung';
+    case EPENGADAAN_LANGSUNG = 'EPengadaan Langsung';
     case PENUNJUKAN_LANGSUNG = 'Penunjukan Langsung';
     case EPENUNJUKAN_LANGSUNG = 'EPenunjukan Langsung';
     case TOKO_DARING = 'Toko Daring';
@@ -19,8 +19,8 @@ enum MetodePengadaan: string
     {
         return match($this) {
             self::Dikecualikan => 'Dikecualikan',
-            self::PengadaanLangsung => 'Pengadaan Langsung',
-            self::PenunjukanLangsung => 'Penunjukan Langsung',
+            self::EPENGADAAN_LANGSUNG => 'EPengadaan Langsung',
+            self::PENUNJUKAN_LANGSUNG => 'Penunjukan Langsung',
             self::EPENUNJUKAN_LANGSUNG => 'EPenunjukan Langsung',
             self::TokoDaring => 'Toko Daring',
             self::Ekatalog => 'E-Katalog',
@@ -32,7 +32,7 @@ enum MetodePengadaan: string
     {
         return [
             self::DIKECUALIKAN->value => 'Dikecualikan',
-            self::PENGADAAN_LANGSUNG->value => 'Pengadaan Langsung',
+            self::EPENGADAAN_LANGSUNG->value => 'EPengadaan Langsung',
             self::PENUNJUKAN_LANGSUNG->value => 'Penunjukan Langsung',
             self::EPENUNJUKAN_LANGSUNG->value => 'EPenunjukan Langsung',
             self::TOKO_DARING->value => 'Toko Daring',

@@ -19,7 +19,7 @@ class SwakelolaResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationLabel = 'Pencatatan Swakelola';
     protected static ?int $navigationSort = 6;
-    
+
 
     public static function getModelLabel(): string
     {
@@ -53,20 +53,20 @@ class SwakelolaResource extends Resource
                             ->required()
                             ->rule('numeric')
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ]),
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ]),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
                             ->required()
                             ->rule('numeric')
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ])
                             ->prefix('Rp'),
 
                         Forms\Components\TextInput::make('kode_paket')
@@ -95,7 +95,10 @@ class SwakelolaResource extends Resource
                             ->required()
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
                             ->maxSize(5120)
+                            ->disk('private')
                             ->directory('realisasi')
+                            ->preserveFilenames()
+                            ->visibility('private')
                             ->downloadable()
                             ->openable()
                             ->helperText('Upload file JPG/PDF (Max: 5MB)'),
@@ -107,18 +110,18 @@ class SwakelolaResource extends Resource
                         Forms\Components\TextInput::make('nilai_kontrak')
                             ->label('Nilai Kontrak')
                             ->required()
-                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
+                            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                             ->rule('numeric')
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ])
                             ->prefix('Rp')
                             ->placeholder('0')
                             ->columnSpanFull(),
                     ]),
-            ]);
+            ])->preserveFilenames();
     }
 
     public static function table(Table $table): Table

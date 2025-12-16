@@ -22,13 +22,13 @@ class PengadaanDaruratResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
-    
+
 
     public static function getModelLabel(): string
     {
         return 'Data Pencatatan Pengadaan Darurat';
     }
-    
+
     protected static ?string $pluralModelLabel = 'Data Pencatatan Pengadaan Darurat';
 
     public static function form(Form $form): Form
@@ -56,20 +56,20 @@ class PengadaanDaruratResource extends Resource
                             ->required()
                             ->rule('numeric')
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ]),
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ]),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
                             ->required()
                             ->rule('numeric')
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ])
                             ->prefix('Rp'),
 
                         Forms\Components\TextInput::make('kode_paket')
@@ -98,7 +98,10 @@ class PengadaanDaruratResource extends Resource
                             ->required()
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
                             ->maxSize(5120)
+                            ->disk('private')
                             ->directory('realisasi')
+                            ->preserveFilenames()
+                            ->visibility('private')
                             ->downloadable()
                             ->openable()
                             ->helperText('Upload file JPG/PDF (Max: 5MB)'),
@@ -110,12 +113,12 @@ class PengadaanDaruratResource extends Resource
                         Forms\Components\TextInput::make('nilai_kontrak')
                             ->label('Nilai Kontrak')
                             ->rule('numeric')
-                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
+                            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ])
                             ->required()
                             ->live(onBlur: true)
                             ->prefix('Rp')
@@ -123,13 +126,13 @@ class PengadaanDaruratResource extends Resource
                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                 $pdnTkdnImpor = $get('pdn_tkdn_impor');
                                 $umkNonUmk = $get('umk_non_umk');
-                                
+
                                 if ($pdnTkdnImpor === 'IMPOR') {
                                     $set('nilai_pdn_tkdn_impor', 0);
                                 } elseif ($pdnTkdnImpor) {
                                     $set('nilai_pdn_tkdn_impor', $state);
                                 }
-                                
+
                                 if ($umkNonUmk === 'Non UMK') {
                                     $set('nilai_umk', 0);
                                 } elseif ($umkNonUmk) {
@@ -143,7 +146,7 @@ class PengadaanDaruratResource extends Resource
                                 Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
                                     ->schema([
                                         Forms\Components\Radio::make('pdn_tkdn_impor')
-                                        ->label('Pilih salah satu')
+                                            ->label('Pilih salah satu')
                                             ->options([
                                                 'PDN' => 'PDN',
                                                 'TKDN' => 'TKDN',
@@ -173,12 +176,13 @@ class PengadaanDaruratResource extends Resource
                                     ->schema([
                                         Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
                                             ->label('Nilai IMPOR')
-                                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
+                                            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
                                             ->prefix('Rp')
-                                            ->visible(fn (Forms\Get $get): bool =>
+                                            ->visible(
+                                                fn(Forms\Get $get): bool =>
                                                 in_array($get('pdn_tkdn_impor'), ['PDN', 'IMPOR'])
                                             ),
 
@@ -188,10 +192,10 @@ class PengadaanDaruratResource extends Resource
                                                     ->label('Persentase TKDN')
                                                     ->rule('numeric')
                                                     ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
+                                                        'pattern' => '[0-9]*',
+                                                        'inputmode' => 'numeric',
+                                                        'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                                    ])
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
@@ -212,7 +216,8 @@ class PengadaanDaruratResource extends Resource
                                                     ->prefix('Rp'),
                                             ])
                                             ->columns(2)
-                                            ->visible(fn (Forms\Get $get): bool =>
+                                            ->visible(
+                                                fn(Forms\Get $get): bool =>
                                                 $get('pdn_tkdn_impor') === 'TKDN'
                                             ),
                                     ])
@@ -225,7 +230,7 @@ class PengadaanDaruratResource extends Resource
                                 Forms\Components\Fieldset::make('UMK / Non UMK')
                                     ->schema([
                                         Forms\Components\Radio::make('umk_non_umk')
-                                        ->label('Pilih salah satu')
+                                            ->label('Pilih salah satu')
                                             ->options([
                                                 'UMK' => 'UMK',
                                                 'Non UMK' => 'Non UMK',
@@ -247,7 +252,7 @@ class PengadaanDaruratResource extends Resource
 
                                 Forms\Components\TextInput::make('nilai_umk')
                                     ->label('Nilai UMK')
-                                    ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
+                                    ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                                     ->numeric()
                                     ->disabled()
                                     ->dehydrated()
@@ -281,12 +286,12 @@ class PengadaanDaruratResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('nilai_kontrak')
                     ->label('Nilai Kontrak')
-                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
+                    ->formatStateUsing(fn($state) => $state ? 'Rp ' . number_format($state, 0, ',', '.') : '-')
                     ->sortable(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                
+
                 // ✅ ACTION TAMBAH KE ROMBONGAN - SAMA SEPERTI PL
                 Tables\Actions\Action::make('add_to_rombongan')
                     ->label('Tambahkan ke Rombongan')
@@ -301,11 +306,11 @@ class PengadaanDaruratResource extends Resource
                     ])
                     ->action(function (PengadaanDarurat $record, array $data) {
                         $rombonganId = $data['rombongan_id'];
-                        
+
                         // Gunakan method addItem dari Model Rombongan
                         $rombongan = Rombongan::find($rombonganId);
                         $result = $rombongan->addItem('App\Models\PengadaanDarurat', $record->id);
-                        
+
                         if ($result) {
                             \Filament\Notifications\Notification::make()
                                 ->title('Berhasil ditambahkan ke rombongan')
@@ -321,7 +326,7 @@ class PengadaanDaruratResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Tambahkan ke Rombongan')
                     ->modalSubmitActionLabel('Tambahkan'),
-                    
+
                 Tables\Actions\DeleteAction::make(),
             ])
             ->filters([
@@ -338,7 +343,7 @@ class PengadaanDaruratResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                    
+
                     // ✅ BULK ACTION: TAMBAH KE ROMBONGAN - SAMA SEPERTI PL
                     Tables\Actions\BulkAction::make('add_to_rombongan_bulk')
                         ->label('Tambahkan ke Rombongan')
@@ -355,14 +360,14 @@ class PengadaanDaruratResource extends Resource
                             $rombonganId = $data['rombongan_id'];
                             $rombongan = Rombongan::find($rombonganId);
                             $addedCount = 0;
-                            
+
                             foreach ($records as $record) {
                                 $result = $rombongan->addItem('App\Models\PengadaanDarurat', $record->id);
                                 if ($result) {
                                     $addedCount++;
                                 }
                             }
-                            
+
                             \Filament\Notifications\Notification::make()
                                 ->title("{$addedCount} data berhasil ditambahkan ke rombongan")
                                 ->success()

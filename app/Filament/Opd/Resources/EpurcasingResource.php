@@ -25,7 +25,7 @@ class EpurcasingResource extends Resource
     protected static ?int $navigationSort = 2;
 
 
-    
+
 
     public static function getModelLabel(): string
     {
@@ -59,20 +59,20 @@ class EpurcasingResource extends Resource
                             ->required()
                             ->rule('numeric')
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ]),
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ]),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
                             ->required()
                             ->rule('numeric')
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ])
                             ->prefix('Rp'),
 
                         Forms\Components\TextInput::make('kode_paket')
@@ -108,13 +108,16 @@ class EpurcasingResource extends Resource
                             ->required()
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
                             ->maxSize(5120)
+                            ->disk('private')
                             ->directory('surat_pesanan')
+                            ->preserveFilenames()
+                            ->visibility('private')
                             ->downloadable()
                             ->openable()
                             ->helperText('Upload file JPG/PDF (Max: 5MB)'),
-                    
-                    
-                            ])
+
+
+                    ])
                     ->columns(2),
 
                 Forms\Components\Section::make('Nilai Kontrak & Komponen')
@@ -122,19 +125,17 @@ class EpurcasingResource extends Resource
                         Forms\Components\TextInput::make('nilai_kontrak')
                             ->label('Nilai Kontrak')
                             ->rule('numeric')
-                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
+                            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ])
                             ->required()
                             ->live(onBlur: true)
                             ->prefix('Rp')
-                            
-                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) 
-                            
-                            {
+
+                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                 $pdnTkdnImpor = $get('pdn_tkdn_impor');
                                 $umkNonUmk = $get('umk_non_umk');
 
@@ -187,7 +188,7 @@ class EpurcasingResource extends Resource
                                     ->schema([
                                         Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
                                             ->label('Nilai IMPOR')
-                                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
+                                            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
@@ -203,10 +204,10 @@ class EpurcasingResource extends Resource
                                                     ->label('Persentase TKDN')
                                                     ->rule('numeric')
                                                     ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
+                                                        'pattern' => '[0-9]*',
+                                                        'inputmode' => 'numeric',
+                                                        'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                                    ])
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
@@ -241,7 +242,7 @@ class EpurcasingResource extends Resource
                                 Forms\Components\Fieldset::make('UMK / Non UMK')
                                     ->schema([
                                         Forms\Components\Radio::make('umk_non_umk')
-                                        ->label('Pilih salah satu')
+                                            ->label('Pilih salah satu')
                                             ->required()
                                             ->options([
                                                 'UMK' => 'UMK',
@@ -263,7 +264,7 @@ class EpurcasingResource extends Resource
 
                                 Forms\Components\TextInput::make('nilai_umk')
                                     ->label('Nilai UMK')
-                                    ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
+                                    ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                                     ->numeric()
                                     ->disabled()
                                     ->dehydrated()
@@ -290,7 +291,10 @@ class EpurcasingResource extends Resource
                             ->required(fn(Forms\Get $get): bool => $get('serah_terima') === 'BAST')
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
                             ->maxSize(5120)
+                            ->disk('private')
                             ->directory('BAST')
+                            ->preserveFilenames()
+                            ->visibility('private')
                             ->downloadable()
                             ->openable()
                             ->visible(
@@ -305,7 +309,7 @@ class EpurcasingResource extends Resource
                             ->disabled(), // Menonaktifkan field
                     ])
                     ->columns(2),
-            ]);
+            ])->preserveFilenames();
     }
 
     public static function table(Table $table): Table

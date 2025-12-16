@@ -21,11 +21,11 @@ class PlResource extends Resource
 
     protected static ?string $navigationLabel = 'Non Tender';
 
-    
+
 
     protected static ?int $navigationSort = 3;
 
-    
+
 
     public static function getModelLabel(): string
     {
@@ -59,20 +59,20 @@ class PlResource extends Resource
                             ->required()
                             ->rule('numeric')
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ]), // ✅ HANYA ANGKA
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ]), // ✅ HANYA ANGKA
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
                             ->required()
                             ->rule('numeric')
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ])
                             ->prefix('Rp'),
 
                         Forms\Components\TextInput::make('kode_paket')
@@ -107,9 +107,12 @@ class PlResource extends Resource
                         Forms\Components\FileUpload::make('summary_report')
                             ->label('Summary Report')
                             ->required()
+                            ->disk('private')
+                            ->directory('summary-reports')
+                            ->preserveFilenames()
+                            ->visibility('private')
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
                             ->maxSize(5120)
-                            ->directory('summary-reports')
                             ->downloadable()
                             ->openable()
                             ->helperText('Upload file JPG/PDF (Max: 5MB)'),
@@ -122,12 +125,12 @@ class PlResource extends Resource
                             ->label('Nilai Kontrak')
                             ->step(1)
                             ->rule('numeric')
-                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
+                            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                             ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
+                                'pattern' => '[0-9]*',
+                                'inputmode' => 'numeric',
+                                'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                            ])
                             ->required()
                             ->live(onBlur: true)
                             ->prefix('Rp')
@@ -185,7 +188,7 @@ class PlResource extends Resource
                                     ->schema([
                                         Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
                                             ->label('Nilai IMPOR')
-                                            ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
+                                            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
@@ -201,10 +204,10 @@ class PlResource extends Resource
                                                     ->label('Persentase TKDN')
                                                     ->rule('numeric')
                                                     ->extraInputAttributes([
-                                    'pattern' => '[0-9]*',
-                                    'inputmode' => 'numeric',
-                                    'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                                ])
+                                                        'pattern' => '[0-9]*',
+                                                        'inputmode' => 'numeric',
+                                                        'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                                                    ])
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
@@ -238,7 +241,7 @@ class PlResource extends Resource
                                 Forms\Components\Fieldset::make('UMK / Non UMK')
                                     ->schema([
                                         Forms\Components\Radio::make('umk_non_umk')
-                                        ->label('Pilih salah satu')
+                                            ->label('Pilih salah satu')
                                             ->required()
                                             ->options([
                                                 'UMK' => 'UMK',
@@ -260,7 +263,7 @@ class PlResource extends Resource
 
                                 Forms\Components\TextInput::make('nilai_umk')
                                     ->label('Nilai UMK')
-                                    ->formatStateUsing(fn ($state) => $state ? (int) $state : null)
+                                    ->formatStateUsing(fn($state) => $state ? (int) $state : null)
                                     ->numeric()
                                     ->disabled()
                                     ->dehydrated()
@@ -287,7 +290,10 @@ class PlResource extends Resource
                             ->required(fn(Forms\Get $get): bool => $get('serah_terima_pekerjaan') === 'BAST')
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
                             ->maxSize(5120)
-                            ->directory('bast-documents')
+                            ->disk('private')
+                            ->directory('bast_document')
+                            ->preserveFilenames()
+                            ->visibility('private')
                             ->downloadable()
                             ->openable()
                             ->visible(
@@ -308,7 +314,7 @@ class PlResource extends Resource
                             ->native(false),
                     ])
                     ->columns(2),
-            ]);
+            ])->preserveFilenames();
     }
 
     public static function table(Table $table): Table
@@ -371,7 +377,7 @@ class PlResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Tambahkan ke Rombongan')
                     ->modalSubmitActionLabel('Tambahkan'),
-                    Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('jenis_pengadaan')

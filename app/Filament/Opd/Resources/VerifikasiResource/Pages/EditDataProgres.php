@@ -740,6 +740,7 @@ class EditDataProgres extends EditRecord
                       'TKDN' => 'TKDN',
                       'IMPOR' => 'IMPOR',
                     ])
+                    
                     ->inline()
                     ->columnSpanFull(),
                 ])
