@@ -39,8 +39,8 @@
             <button
                 wire:click="applyFilter"
                 wire:loading.attr="disabled"
-                @disabled(!$opdSelected)
                 class="relative inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-primary-500 disabled:opacity-50">
+                
                 {{-- Spinner --}}
                 <svg
                     wire:loading
@@ -55,7 +55,8 @@
                         d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                 </svg>
 
-                <span>Cari</span>
+                <span wire:loading.remove wire:target="applyFilter">Cari</span>
+                <span wire:loading wire:target="applyFilter">Mencari...</span>
             </button>
         </div>
 

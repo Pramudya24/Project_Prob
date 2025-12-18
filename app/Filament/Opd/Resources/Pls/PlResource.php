@@ -62,7 +62,7 @@ class PlResource extends Resource
                                 'pattern' => '[0-9]*',
                                 'inputmode' => 'numeric',
                                 'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                            ]), // ✅ HANYA ANGKA
+                            ]),
 
                         Forms\Components\TextInput::make('pagu_rup')
                             ->label('Pagu RUP')
@@ -315,7 +315,7 @@ class PlResource extends Resource
                             ->native(false),
                     ])
                     ->columns(2),
-            ])->preserveFilenames();
+            ]);
     }
 
     public static function table(Table $table): Table
