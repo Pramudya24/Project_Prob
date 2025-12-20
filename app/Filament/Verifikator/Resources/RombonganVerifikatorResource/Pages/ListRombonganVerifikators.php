@@ -16,6 +16,7 @@ class ListRombonganVerifikators extends ListRecords
 {
     protected static string $resource = RombonganVerifikatorResource::class;
 
+    // ✅ Polling interval untuk auto refresh
     protected static ?string $pollingInterval = '5s';
 
     public string $opdSelected = '';
@@ -23,8 +24,6 @@ class ListRombonganVerifikators extends ListRecords
     public function mount(): void
     {
         parent::mount();
-
-        // Load filter dari session
         $this->opdSelected = session('filter_opd_verifikator', '');
     }
 
@@ -32,14 +31,10 @@ class ListRombonganVerifikators extends ListRecords
     public function setOpd($opd): void
     {
         $this->opdSelected = $opd;
-
-        // Simpan ke session supaya persist setelah save
         session(['filter_opd_verifikator' => $opd]);
-
         $this->resetTable();
     }
 
-    // Update opdSelected langsung dari dropdown
     public function updatedOpdSelected($value): void
     {
         session(['filter_opd_verifikator' => $value]);
@@ -48,9 +43,7 @@ class ListRombonganVerifikators extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            // Header action tidak perlu lagi, pakai dropdown di header custom
-        ];
+        return [];
     }
 
     public function getHeader(): ?View
@@ -83,7 +76,6 @@ class ListRombonganVerifikators extends ListRecords
 
     public function refreshTable(): void
     {
-        // Trigger notification
         Notification::make()
             ->title('🔄 Data Baru Masuk')
             ->body('Ada data rombongan yang baru dikirim dari OPD.')

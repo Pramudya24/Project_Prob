@@ -32,7 +32,7 @@
         </div>
     </div>
 
-    {{-- DAFTAR ITEM --}}
+    {{-- DAFTAR ITEM DALAM ACCORDION --}}
     <div>
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,91 +55,158 @@
         @else
             <div class="space-y-4">
                 @foreach($groupedItems as $type => $group)
-                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                        {{-- HEADER TYPE --}}
-                        <div class="bg-gray-50 dark:bg-gray-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                            <h4 class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                    {{ $group['label'] }}
-                                </span>
-                                <span class="text-sm text-gray-500 dark:text-gray-400">({{ count($group['items']) }} item)</span>
-                            </h4>
-                        </div>
-
-                        {{-- ITEMS --}}
-                        <div class="divide-y divide-gray-200 dark:divide-gray-700">
-                            @foreach($group['items'] as $item)
-                                <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {{-- KOLOM KIRI --}}
-                                        <div class="space-y-2">
-                                            <div>
-                                                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Nama Pekerjaan</p>
-                                                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $item['data']['nama_pekerjaan'] ?? '-' }}</p>
-                                            </div>
-                                            <div class="grid grid-cols-2 gap-2">
-                                                <div>
-                                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Kode RUP</p>
-                                                    <p class="text-sm text-gray-900 dark:text-white">{{ $item['data']['kode_rup'] ?? '-' }}</p>
-                                                </div>
-                                                <div>
-                                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Kode Paket</p>
-                                                    <p class="text-sm text-gray-900 dark:text-white">{{ $item['data']['kode_paket'] ?? '-' }}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {{-- KOLOM KANAN --}}
-                                        <div class="space-y-2">
-                                            <div>
-                                                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Jenis Pengadaan</p>
-                                                <p class="text-sm text-gray-900 dark:text-white">{{ $item['data']['jenis_pengadaan'] ?? '-' }}</p>
-                                            </div>
-                                            <div class="grid grid-cols-2 gap-2">
-                                                <div>
-                                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Pagu RUP</p>
-                                                    <p class="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                                                        Rp {{ number_format($item['data']['pagu_rup'] ?? 0, 0, ',', '.') }}
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Nilai Kontrak</p>
-                                                    <p class="text-sm font-semibold text-green-600 dark:text-green-400">
-                                                        Rp {{ number_format($item['data']['nilai_kontrak'] ?? 0, 0, ',', '.') }}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {{-- INFO TAMBAHAN --}}
-                                    @if(isset($item['data']['metode_pengadaan']))
-                                    <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                                        <div class="flex flex-wrap gap-2 items-center text-xs">
-                                            <span class="inline-flex items-center px-2 py-1 rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                                                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
-                                                </svg>
-                                                {{ $item['data']['metode_pengadaan'] }}
-                                            </span>
-                                            
-                                            @if(isset($item['data']['pdn_tkdn_impor']))
-                                            <span class="inline-flex items-center px-2 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                                {{ $item['data']['pdn_tkdn_impor'] }}
-                                            </span>
-                                            @endif
-                                            
-                                            @if(isset($item['data']['umk_non_umk']))
-                                            <span class="inline-flex items-center px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                                {{ $item['data']['umk_non_umk'] }}
-                                            </span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                    @endif
+                    {{-- ACCORDION CONTAINER dengan Alpine.js --}}
+                    <div x-data="{ open: true }" class="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
+                        {{-- ACCORDION HEADER --}}
+                        <button 
+                            type="button"
+                            @click="open = !open"
+                            class="w-full px-6 py-4 flex items-center justify-between bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        >
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">📦</span>
+                                <div class="text-left">
+                                    <h4 class="font-bold text-gray-900 dark:text-white text-lg">{{ strtoupper($group['label']) }}</h4>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ count($group['items']) }} item</p>
                                 </div>
-                            @endforeach
+                            </div>
+                            <svg 
+                                class="w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-200" 
+                                :class="{ 'rotate-180': open }"
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+
+                        {{-- ACCORDION CONTENT --}}
+                        <div 
+                            x-show="open"
+                            x-transition:enter="transition ease-out duration-300"
+                            x-transition:enter-start="opacity-0 transform -translate-y-2"
+                            x-transition:enter-end="opacity-100 transform translate-y-0"
+                            x-transition:leave="transition ease-in duration-200"
+                            x-transition:leave-start="opacity-100 transform translate-y-0"
+                            x-transition:leave-end="opacity-0 transform -translate-y-2"
+                        >
+                            <div class="p-6 space-y-6">
+                                @foreach($group['items'] as $item)
+                                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+                                        {{-- HEADER ITEM --}}
+                                        <div class="mb-4 pb-3 border-b border-gray-300 dark:border-gray-600">
+                                            <h5 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                                Item: {{ $item['data']['nama_pekerjaan'] ?? 'Tidak ada nama' }}
+                                            </h5>
+                                        </div>
+
+                                        {{-- TABEL DATA ITEM --}}
+                                        <div class="overflow-x-auto">
+                                            <table class="w-full border-collapse border border-gray-300 dark:border-gray-600 text-sm">
+                                                <thead>
+                                                    <tr class="bg-gray-100 dark:bg-gray-700">
+                                                        <th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold w-16">No</th>
+                                                        <th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold">Uraian</th>
+                                                        <th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold">Keterangan</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @php
+                                                        $no = 1;
+                                                        // ✅ AMBIL SEMUA FIELD dari data item (auto-detect)
+                                                        $excludeFields = ['id', 'created_at', 'updated_at', 'deleted_at', 'user_id'];
+                                                        $allFields = array_diff(array_keys($item['data']), $excludeFields);
+                                                        
+                                                        // Label mapping
+                                                        $fieldLabels = [
+                                                            'nama_opd' => 'Nama OPD',
+                                                            'tanggal_dibuat' => 'Tanggal Dibuat',
+                                                            'nama_pekerjaan' => 'Nama Pekerjaan',
+                                                            'kode_rup' => 'Kode RUP',
+                                                            'pagu_rup' => 'Pagu RUP',
+                                                            'kode_paket' => 'Kode Paket',
+                                                            'jenis_pengadaan' => 'Jenis Pengadaan',
+                                                            'metode_pengadaan' => 'Metode Pengadaan',
+                                                            'summary_report' => 'Summary Report',
+                                                            'nilai_kontrak' => 'Nilai Kontrak',
+                                                            'pdn_tkdn_impor' => 'PDN/TKDN/IMPOR',
+                                                            'persentase_tkdn' => 'Persentase TKDN',
+                                                            'nilai_pdn_tkdn_impor' => 'Nilai PDN/TKDN/IMPOR',
+                                                            'umk_non_umk' => 'UMK / Non UMK',
+                                                            'nilai_umk' => 'Nilai UMK',
+                                                            'serah_terima_pekerjaan' => 'Serah Terima Pekerjaan',
+                                                            'BAST' => 'BAST',
+                                                            'bast_document' => 'Dokumen BAST',
+                                                            'penilaian_kinerja' => 'Penilaian Kinerja',
+                                                            'realisasi' => 'Realisasi',
+                                                            'surat_pesanan' => 'Surat Pesanan',
+                                                            'serah_terima' => 'Serah Terima',
+                                                        ];
+                                                    @endphp
+
+                                                    @foreach($allFields as $fieldKey)
+                                                        @php
+                                                            $value = $item['data'][$fieldKey] ?? null;
+                                                            
+                                                            // Skip jika null atau kosong
+                                                            if ($value === null || $value === '') {
+                                                                continue;
+                                                            }
+                                                            
+                                                            // Get label
+                                                            $fieldLabel = $fieldLabels[$fieldKey] ?? ucwords(str_replace('_', ' ', $fieldKey));
+                                                            
+                                                            // Format nilai rupiah
+                                                            if (in_array($fieldKey, ['pagu_rup', 'nilai_kontrak', 'nilai_pdn_tkdn_impor', 'nilai_umk']) && is_numeric($value)) {
+                                                                $value = 'Rp ' . number_format($value, 0, ',', '.');
+                                                            }
+                                                            
+                                                            // Format tanggal
+                                                            if (str_contains($fieldKey, 'tanggal') && $value && $value !== '-') {
+                                                                try {
+                                                                    $value = \Carbon\Carbon::parse($value)->format('d/m/Y');
+                                                                } catch (\Exception $e) {
+                                                                    // Keep original
+                                                                }
+                                                            }
+                                                            
+                                                            // Format persentase
+                                                            if ($fieldKey === 'persentase_tkdn' && is_numeric($value)) {
+                                                                $value = $value . '%';
+                                                            }
+                                                            
+                                                            // Handle file paths (PDF, Image)
+                                                            $isFile = in_array($fieldKey, ['summary_report', 'BAST', 'bast_document', 'realisasi', 'surat_pesanan']);
+                                                            if ($isFile && $value && $value !== '-') {
+                                                                $fileName = basename($value);
+                                                                
+                                                                // ✅ FIX: Pakai route private.file dengan encode path
+                                                                $encodedPath = urlencode($value);
+                                                                $fileUrl = route('private.file', ['path' => $encodedPath]);
+                                                                
+                                                                $value = '<a href="' . $fileUrl . '" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1">
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                                                                    </svg>
+                                                                    ' . htmlspecialchars($fileName) . '
+                                                                </a>';
+                                                            }
+                                                        @endphp
+                                                        
+                                                        <tr class="hover:bg-gray-200/50 dark:hover:bg-gray-600/50">
+                                                            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center">{{ $no++ }}</td>
+                                                            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3 font-medium">{{ $fieldLabel }}</td>
+                                                            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+                                                                {!! $value !!}
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
                 @endforeach

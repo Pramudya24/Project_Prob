@@ -27,6 +27,7 @@ class MonitoringPanelProvider extends PanelProvider
             ->id('monitoring')
             ->path('monitoring')
             ->login()
+            ->brandName('SIVERA')
             ->colors([
                 'primary' => Color::Orange,
             ])

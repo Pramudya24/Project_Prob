@@ -1,3 +1,4 @@
+
 <div class="space-y-6">
     {{-- INFORMASI ROMBONGAN --}}
     <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-lg p-6 border border-blue-200 dark:border-gray-700">
@@ -32,7 +33,7 @@
         </div>
     </div>
 
-    {{-- DAFTAR ITEM --}}
+    {{-- DAFTAR ITEM DALAM ACCORDION --}}
     <div>
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,91 +56,104 @@
         @else
             <div class="space-y-4">
                 @foreach($groupedItems as $type => $group)
-                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                        {{-- HEADER TYPE --}}
-                        <div class="bg-gray-50 dark:bg-gray-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                            <h4 class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                    {{ $group['label'] }}
-                                </span>
-                                <span class="text-sm text-gray-500 dark:text-gray-400">({{ count($group['items']) }} item)</span>
-                            </h4>
-                        </div>
-
-                        {{-- ITEMS --}}
-                        <div class="divide-y divide-gray-200 dark:divide-gray-700">
-                            @foreach($group['items'] as $item)
-                                <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {{-- KOLOM KIRI --}}
-                                        <div class="space-y-2">
-                                            <div>
-                                                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Nama Pekerjaan</p>
-                                                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $item['data']['nama_pekerjaan'] ?? '-' }}</p>
-                                            </div>
-                                            <div class="grid grid-cols-2 gap-2">
-                                                <div>
-                                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Kode RUP</p>
-                                                    <p class="text-sm text-gray-900 dark:text-white">{{ $item['data']['kode_rup'] ?? '-' }}</p>
-                                                </div>
-                                                <div>
-                                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Kode Paket</p>
-                                                    <p class="text-sm text-gray-900 dark:text-white">{{ $item['data']['kode_paket'] ?? '-' }}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {{-- KOLOM KANAN --}}
-                                        <div class="space-y-2">
-                                            <div>
-                                                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Jenis Pengadaan</p>
-                                                <p class="text-sm text-gray-900 dark:text-white">{{ $item['data']['jenis_pengadaan'] ?? '-' }}</p>
-                                            </div>
-                                            <div class="grid grid-cols-2 gap-2">
-                                                <div>
-                                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Pagu RUP</p>
-                                                    <p class="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                                                        Rp {{ number_format($item['data']['pagu_rup'] ?? 0, 0, ',', '.') }}
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Nilai Kontrak</p>
-                                                    <p class="text-sm font-semibold text-green-600 dark:text-green-400">
-                                                        Rp {{ number_format($item['data']['nilai_kontrak'] ?? 0, 0, ',', '.') }}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {{-- INFO TAMBAHAN --}}
-                                    @if(isset($item['data']['metode_pengadaan']))
-                                    <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                                        <div class="flex flex-wrap gap-2 items-center text-xs">
-                                            <span class="inline-flex items-center px-2 py-1 rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                                                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
-                                                </svg>
-                                                {{ $item['data']['metode_pengadaan'] }}
-                                            </span>
-                                            
-                                            @if(isset($item['data']['pdn_tkdn_impor']))
-                                            <span class="inline-flex items-center px-2 py-1 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                                {{ $item['data']['pdn_tkdn_impor'] }}
-                                            </span>
-                                            @endif
-                                            
-                                            @if(isset($item['data']['umk_non_umk']))
-                                            <span class="inline-flex items-center px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                                {{ $item['data']['umk_non_umk'] }}
-                                            </span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                    @endif
+                    {{-- ACCORDION CONTAINER --}}
+                    <div class="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
+                        {{-- ACCORDION HEADER --}}
+                        <button 
+                            type="button"
+                            onclick="toggleAccordion('accordion-{{ $loop->index }}')"
+                            class="w-full px-6 py-4 flex items-center justify-between bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        >
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">📦</span>
+                                <div class="text-left">
+                                    <h4 class="font-bold text-gray-900 dark:text-white text-lg">{{ strtoupper($group['label']) }}</h4>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ count($group['items']) }} item</p>
                                 </div>
-                            @endforeach
+                            </div>
+                            <svg class="w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-200 accordion-icon" 
+                                 id="icon-accordion-{{ $loop->index }}"
+                                 fill="none" 
+                                 stroke="currentColor" 
+                                 viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+
+                        {{-- ACCORDION CONTENT --}}
+                        <div id="accordion-{{ $loop->index }}" class="accordion-content">
+                            <div class="p-6 space-y-6">
+                                @foreach($group['items'] as $item)
+                                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+                                        {{-- HEADER ITEM --}}
+                                        <div class="mb-4 pb-3 border-b border-gray-300 dark:border-gray-600">
+                                            <h5 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                                Item: {{ $item['data']['nama_pekerjaan'] ?? 'Tidak ada nama' }}
+                                            </h5>
+                                        </div>
+
+                                        {{-- TABEL DATA ITEM --}}
+                                        <div class="overflow-x-auto">
+                                            <table class="w-full border-collapse border border-gray-300 dark:border-gray-600 text-sm">
+                                                <thead>
+                                                    <tr class="bg-gray-100 dark:bg-gray-700">
+                                                        <th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold w-16">No</th>
+                                                        <th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold">Uraian</th>
+                                                        <th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold">Keterangan</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @php
+                                                        $no = 1;
+                                                        $fieldsToShow = [
+                                                            'nama_pekerjaan' => 'Nama Pekerjaan',
+                                                            'kode_rup' => 'Kode RUP',
+                                                            'pagu_rup' => 'Pagu RUP',
+                                                            'kode_paket' => 'Kode Paket',
+                                                            'jenis_pengadaan' => 'Jenis Pengadaan',
+                                                            'metode_pengadaan' => 'Metode Pengadaan',
+                                                            'nilai_kontrak' => 'Nilai Kontrak',
+                                                            'pdn_tkdn_impor' => 'PDN/TKDN/IMPOR',
+                                                            'nilai_pdn_tkdn_impor' => 'Nilai PDN/TKDN/IMPOR',
+                                                            'umk_non_umk' => 'UMK / Non UMK',
+                                                            'nilai_umk' => 'Nilai UMK',
+                                                        ];
+                                                    @endphp
+
+                                                    @foreach($fieldsToShow as $fieldKey => $fieldLabel)
+                                                        @if(isset($item['data'][$fieldKey]))
+                                                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                                                <td class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center">{{ $no++ }}</td>
+                                                                <td class="border border-gray-300 dark:border-gray-600 px-4 py-3 font-medium">{{ $fieldLabel }}</td>
+                                                                <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+                                                                    @php
+                                                                        $value = $item['data'][$fieldKey];
+                                                                        
+                                                                        // Format nilai rupiah
+                                                                        if (in_array($fieldKey, ['pagu_rup', 'nilai_kontrak', 'nilai_pdn_tkdn_impor', 'nilai_umk']) && is_numeric($value)) {
+                                                                            $value = 'Rp ' . number_format($value, 0, ',', '.');
+                                                                        }
+                                                                        
+                                                                        // Format tanggal
+                                                                        if (str_contains($fieldKey, 'tanggal') && $value && $value !== '-') {
+                                                                            try {
+                                                                                $value = \Carbon\Carbon::parse($value)->format('d/m/Y');
+                                                                            } catch (\Exception $e) {
+                                                                                // Keep original
+                                                                            }
+                                                                        }
+                                                                    @endphp
+                                                                    {{ $value ?? '-' }}
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
                 @endforeach
@@ -162,3 +176,33 @@
     </div>
     @endif
 </div>
+
+{{-- JAVASCRIPT UNTUK ACCORDION --}}
+<script>
+    function toggleAccordion(id) {
+        const content = document.getElementById(id);
+        const icon = document.getElementById('icon-' + id);
+        
+        if (content.classList.contains('accordion-open')) {
+            content.classList.remove('accordion-open');
+            icon.style.transform = 'rotate(0deg)';
+        } else {
+            content.classList.add('accordion-open');
+            icon.style.transform = 'rotate(180deg)';
+        }
+    }
+</script>
+
+{{-- CSS UNTUK ACCORDION --}}
+<style>
+    .accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+    }
+    
+    .accordion-content.accordion-open {
+        max-height: 5000px;
+        transition: max-height 0.5s ease-in;
+    }
+</style>

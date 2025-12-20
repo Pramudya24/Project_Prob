@@ -22,6 +22,18 @@ class EditRombonganVerifikator extends EditRecord
         ];
     }
 
+    // ✅ Tambahkan method ini untuk mengubah label tombol
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction()
+                ->label('Simpan'), // ✅ Ubah "Save changes" jadi "Simpan"
+            
+            $this->getCancelFormAction()
+                ->label('Batal'), // ✅ Ubah "Cancel" jadi "Batal"
+        ];
+    }
+
     protected function afterSave(): void
     {
         // Setelah save (jika ada perubahan di data rombongan)

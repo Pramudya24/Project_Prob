@@ -29,97 +29,156 @@ class EditDataProgres extends EditRecord
   public function mount($record): void
   {
     parent::mount($record);
-    $this->form->fill($this->loadFormData());
+
+    // Load data untuk form
+    $formData = [];
+
+    $rombonganItems = $this->record->rombonganItems()->with('item')->get();
+
+    foreach ($rombonganItems as $rombonganItem) {
+      if ($rombonganItem->item) {
+        $formData['items'][$rombonganItem->id] = $rombonganItem->item->toArray();
+      }
+    }
+
+    // Debug - cek data yang akan di-fill
+    \Log::info('EditDataProgres - Form Data:', [
+      'rombongan_id' => $this->record->id,
+      'total_items' => count($formData['items'] ?? []),
+      'form_data' => $formData
+    ]);
+
+    // Fill form
+    $this->form->fill($formData);
   }
 
   public function form(Form $form): Form
   {
     $schemas = [];
+    // Debug 1: Cek record
+    \Log::info('=== DEBUG EDIT DATA PROGRES ===');
+    \Log::info('Record ID: ' . $this->record->id);
+    \Log::info('Record Nama: ' . $this->record->nama_rombongan);
 
-    // 📋 CATATAN VERIFIKATOR
+    // CATATAN VERIFIKATOR
     $schemas[] = Forms\Components\Section::make('📋 Catatan dari Verifikator')
       ->description('Perhatikan catatan ini sebelum memperbaiki data')
       ->schema([
         Forms\Components\Placeholder::make('alert')
           ->label('')
           ->content(fn($record) => new HtmlString('
-                        <div class="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-700 p-4">
-                            <div class="flex items-start gap-3">
-                                <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                </svg>
-                                <div class="flex-1">
-                                    <h3 class="text-sm font-bold text-yellow-800 dark:text-yellow-200 mb-2">Catatan Umum:</h3>
-                                    <p class="text-sm text-yellow-700 dark:text-yellow-300 whitespace-pre-wrap">' .
-            ($record->keterangan_verifikasi ?? 'Tidak ada catatan umum') .
+                    <div class="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-700 p-4">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-bold text-yellow-800 dark:text-yellow-200 mb-2">Catatan Umum:</h3>
+                                <p class="text-sm text-yellow-700 dark:text-yellow-300 whitespace-pre-wrap">' .
+            htmlspecialchars($record->keterangan_verifikasi ?? 'Tidak ada catatan umum') .
             '</p>
-                                    <div class="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800 flex items-center gap-4 text-xs text-yellow-600 dark:text-yellow-400">
-                                        <span>📅 Dikembalikan: ' . $record->tanggal_verifikasi?->format('d/m/Y H:i') . '</span>
-                                        <span>👤 Verifikator: ' . ($record->verifikator?->name ?? '-') . '</span>
-                                    </div>
+                                <div class="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800 flex items-center gap-4 text-xs text-yellow-600 dark:text-yellow-400">
+                                    <span>📅 Dikembalikan: ' . $record->tanggal_verifikasi?->format('d/m/Y H:i') . '</span>
+                                    <span>👤 Verifikator: ' . ($record->verifikator?->name ?? '-') . '</span>
                                 </div>
                             </div>
                         </div>
-                    ')),
+                    </div>
+                ')),
       ])
       ->collapsible()
       ->collapsed(false);
 
-    // 🔧 DYNAMIC FORMS PER ITEM
+    // Debug 2: Cek rombongan items
     $rombonganItems = $this->record->rombonganItems()->with(['item', 'fieldVerifications'])->get();
+    \Log::info('Total Rombongan Items: ' . $rombonganItems->count());
+
+    foreach ($rombonganItems as $index => $rombonganItem) {
+      \Log::info("Item #{$index}:", [
+        'rombongan_item_id' => $rombonganItem->id,
+        'item_type' => $rombonganItem->item_type,
+        'has_item' => $rombonganItem->item ? 'YES' : 'NO',
+        'item_id' => $rombonganItem->item_id ?? 'NULL',
+      ]);
+
+      if ($rombonganItem->item) {
+        \Log::info("  Item Data:", $rombonganItem->item->toArray());
+      }
+    }
+
+    // DYNAMIC FORMS PER ITEM
+    if ($rombonganItems->count() === 0) {
+      $schemas[] = Forms\Components\Section::make('⚠️ Tidak Ada Item')
+        ->description('Tidak ada item dalam rombongan ini')
+        ->schema([
+          Forms\Components\Placeholder::make('no_items')
+            ->label('')
+            ->content(new HtmlString('<p class="text-red-600">Rombongan ini tidak memiliki item. Hubungi administrator.</p>')),
+        ]);
+    }
 
     foreach ($rombonganItems as $rombonganItem) {
       $item = $rombonganItem->item;
-      if (!$item) continue;
+
+      if (!$item) {
+        \Log::warning('Item NULL untuk rombongan_item_id: ' . $rombonganItem->id);
+
+        $schemas[] = Forms\Components\Section::make('⚠️ Item Error')
+          ->description('Item ID: ' . ($rombonganItem->item_id ?? 'NULL'))
+          ->schema([
+            Forms\Components\Placeholder::make('error_' . $rombonganItem->id)
+              ->label('')
+              ->content(new HtmlString('<p class="text-red-600">Item tidak ditemukan untuk rombongan_item_id: ' . $rombonganItem->id . '</p>')),
+          ]);
+        continue;
+      }
 
       $itemType = $rombonganItem->item_type;
       $itemLabel = $this->getItemTypeLabel($itemType);
 
+      \Log::info("Building schema for item:", [
+        'item_type' => $itemType,
+        'item_label' => $itemLabel,
+      ]);
+
       // Get form schema based on item type
       $itemSchemas = $this->getFormSchemaForItem($rombonganItem, $item, $itemType);
 
-      if (!empty($itemSchemas)) {
-        $schemas[] = Forms\Components\Section::make('📦 ' . $itemLabel)
-          ->description('Item: ' . ($item->nama_pekerjaan ?? 'Tidak ada nama'))
-          ->schema($itemSchemas)
-          ->collapsible()
-          ->collapsed(false);
+      if (empty($itemSchemas)) {
+        \Log::warning('Empty schema for item type: ' . $itemType);
+        continue;
       }
+
+      $schemas[] = Forms\Components\Section::make('📦 ' . $itemLabel)
+        ->description('Item: ' . ($item->nama_pekerjaan ?? 'Tidak ada nama'))
+        ->schema($itemSchemas)
+        ->collapsible()
+        ->collapsed(false);
     }
 
-    $form = $form->schema($schemas);
+    \Log::info('Total Schemas Created: ' . count($schemas));
+    \Log::info('=== END DEBUG ===');
+
     return $form->schema($schemas);
-  }
-
-  protected function loadFormData(): array
-  {
-    $data = ['items' => []];
-
-    $rombonganItems = $this->record->rombonganItems()->with('item')->get();
-
-    foreach ($rombonganItems as $rombonganItem) {
-      if ($rombonganItem->item) {
-        $data['items'][$rombonganItem->id] = $rombonganItem->item->toArray();
-      }
-    }
-
-    \Log::info('Form Data:', $data); // Debug - cek di log
-
-    return $data;
   }
 
   protected function getFormSchemaForItem($rombonganItem, $item, $itemType): array
   {
     $rombonganItemId = $rombonganItem->id;
 
+    // ✅ NORMALIZE item type (case insensitive + handle backslash)
+    $itemType = strtolower(str_replace('\\', '\\', $itemType));
+
+    \Log::info('Normalized item type:', ['original' => $rombonganItem->item_type, 'normalized' => $itemType]);
+
     // Detect item type and call appropriate schema builder
     return match ($itemType) {
-      'App\Models\Pl' => $this->getPlFormSchema($rombonganItemId, $item, $rombonganItem),
-      'App\Models\Tender' => $this->getTenderFormSchema($rombonganItemId, $item, $rombonganItem),
-      'App\Models\Epurcasing' => $this->getEpurcasingFormSchema($rombonganItemId, $item, $rombonganItem),
-      'App\Models\Nontender' => $this->getNontenderFormSchema($rombonganItemId, $item, $rombonganItem),
-      'App\Models\PengadaanDarurat' => $this->getPengadaanDaruratFormSchema($rombonganItemId, $item, $rombonganItem),
-      'App\Models\Swakelola' => $this->getSwakelolaFormSchema($rombonganItemId, $item, $rombonganItem),
+      'app\models\pl' => $this->getPlFormSchema($rombonganItemId, $item, $rombonganItem),
+      'app\models\tender' => $this->getTenderFormSchema($rombonganItemId, $item, $rombonganItem),
+      'app\models\epurcasing' => $this->getEpurcasingFormSchema($rombonganItemId, $item, $rombonganItem),
+      'app\models\nontender' => $this->getNontenderFormSchema($rombonganItemId, $item, $rombonganItem),
+      'app\models\pengadaandarurat' => $this->getPengadaanDaruratFormSchema($rombonganItemId, $item, $rombonganItem),
+      'app\models\swakelola' => $this->getSwakelolaFormSchema($rombonganItemId, $item, $rombonganItem),
       default => [],
     };
   }
@@ -341,13 +400,13 @@ class EditDataProgres extends EditRecord
               'Terintegrasi' => 'Terintegrasi',
             ]),
 
-          $this->makeSelectField('metode_pengadaan', $rombonganItemId, $rombonganItem, $item)
-            ->label('Metode Pengadaan')
-            ->required()
-            ->options([
-              'E-Katalog' => 'E-Katalog',
-              'Toko Daring' => 'Toko Daring',
-            ]),
+          // $this->makeSelectField('metode_pengadaan', $rombonganItemId, $rombonganItem, $item)
+          //   ->label('Metode Pengadaan')
+          //   ->required()
+          //   ->options([
+          //     'E-Katalog' => 'E-Katalog',
+          //     'Toko Daring' => 'Toko Daring',
+          //   ]),
 
           $this->makeFileField('surat_pesanan', $rombonganItemId, $rombonganItem, $item)
             ->label('Surat Pesanan')
@@ -740,7 +799,7 @@ class EditDataProgres extends EditRecord
                       'TKDN' => 'TKDN',
                       'IMPOR' => 'IMPOR',
                     ])
-                    
+
                     ->inline()
                     ->columnSpanFull(),
                 ])
@@ -951,7 +1010,8 @@ class EditDataProgres extends EditRecord
     $keterangan = $verification?->keterangan ?? '';
 
     $field = Forms\Components\FileUpload::make("items.{$rombonganItemId}.{$fieldName}")
-      ->default($item->{$fieldName} ?? '');
+      ->disk('private')
+      ->default($item->{$fieldName} ?? null);
 
     if ($isVerified) {
       $field->disabled()->dehydrated();
@@ -971,16 +1031,20 @@ class EditDataProgres extends EditRecord
 
   protected function getItemTypeLabel($itemType): string
   {
+    // ✅ NORMALIZE item type
+    $itemType = strtolower($itemType);
+
     return match ($itemType) {
-      'App\Models\Pl' => 'PL (Penunjukan Langsung)',
-      'App\Models\Tender' => 'Tender',
-      'App\Models\Epurcasing' => 'E-Purchasing',
-      'App\Models\Nontender' => 'Non Tender',
-      'App\Models\PengadaanDarurat' => 'Pengadaan Darurat',
-      'App\Models\Swakelola' => 'Swakelola',
-      default => 'Unknown',
+      'app\models\pl' => 'PL (Penunjukan Langsung)',
+      'app\models\tender' => 'Tender',
+      'app\models\epurcasing' => 'E-Purchasing',
+      'app\models\nontender' => 'Non Tender',
+      'app\models\pengadaandarurat' => 'Pengadaan Darurat',
+      'app\models\swakelola' => 'Swakelola',
+      default => 'Unknown Type: ' . $itemType,
     };
   }
+
 
   protected function getHeaderActions(): array
   {

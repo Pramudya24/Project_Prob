@@ -52,8 +52,7 @@ class DataSudahProgres extends Page implements HasTable
                     ->label('No. SPM')
                     ->placeholder('-')
                     ->badge()
-                    ->color(fn($record) => $record->no_spm ? 'success' : 'gray')
-                    ->icon(fn($record) => $record->no_spm ? 'heroicon-o-check-circle' : 'heroicon-o-minus-circle'),
+                    ->color(fn($record) => $record->no_spm ? 'success' : 'gray'),
                     
                 Tables\Columns\TextColumn::make('keterangan_verifikasi')
                     ->label('Catatan Verifikator')

@@ -87,7 +87,7 @@ class RombonganVerifikatorResource extends Resource
                                         $html .= 'type="button" ';
                                         $html .= 'onclick="event.preventDefault(); event.stopPropagation(); verifyAllFields(' . $item['rombongan_item_id'] . ')" ';
                                         $html .= 'class="px-3 py-1.5 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition">';
-                                        $html .= '✓ Centang Semua';
+                                        $html .= 'Centang Semua';
                                         $html .= '</button>';
                                     }
 
@@ -144,7 +144,7 @@ class RombonganVerifikatorResource extends Resource
 
                                         if ($fieldValue && $fieldValue !== '-') {
                                             $cleanFilename = trim($fieldValue);
-                                            
+
                                             // Cek apakah ini PDF
                                             $isPdfField = str_ends_with(strtolower($cleanFilename), '.pdf');
 
@@ -174,7 +174,7 @@ class RombonganVerifikatorResource extends Resource
                                                 try {
                                                     // ✅ CEK FILE EXISTS DULU
                                                     $fileExists = Storage::disk('private')->exists($cleanFilename);
-                                                    
+
                                                     if ($fileExists) {
                                                         // ✅ ENCODE PATH UNTUK URL
                                                         $encodedPath = urlencode($cleanFilename);
@@ -690,6 +690,9 @@ JS;
                             && $record->status_pengiriman === 'Terkirim ke Verifikator';
                     })
                     ->requiresConfirmation()
+                    ->modalHeading('Kirim ke Data Progres OPD')
+                    ->modalDescription(fn($record) => 'Rombongan "' . $record->nama_rombongan . '" akan dikembalikan ke OPD untuk diperbaiki.')
+                    ->modalSubmitActionLabel('Ya, Kirim')
                     ->action(function ($record) {
                         $record->update([
                             'status_pengiriman' => 'Data Progres',
@@ -699,10 +702,11 @@ JS;
                             'tanggal_verifikasi' => now(),
                             'verifikator_id' => auth()->id(),
                         ]);
-
                         Notification::make()
-                            ->title('Berhasil Dikirim ke Data Progres OPD')
+                            ->title('✅ Berhasil Dikirim ke Data Progres')
+                            ->body('Rombongan "' . $record->nama_rombongan . '" telah dikirim ke Data Progres OPD.')
                             ->success()
+                            ->duration(5000)
                             ->send();
                     }),
 
@@ -716,6 +720,9 @@ JS;
                             && $record->status_pengiriman === 'Terkirim ke Verifikator';
                     })
                     ->requiresConfirmation()
+                    ->modalHeading('Kirim ke Pembuatan SPM')
+                    ->modalDescription(fn($record) => 'Rombongan "' . $record->nama_rombongan . '" Silahkan Buat No. SPM')
+                    ->modalSubmitActionLabel('Ya, Kirim')
                     ->action(function ($record) {
                         $record->update([
                             'status_pengiriman' => 'Data Sudah Progres',
