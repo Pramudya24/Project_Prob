@@ -25,102 +25,87 @@ class RombonganVerifikatorResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form->schema([
-            Forms\Components\Section::make('Data Rombongan')
-                ->schema([
-                    Forms\Components\TextInput::make('nama_rombongan')
-                        ->label('Nama Rombongan')
-                        ->disabled()
-                        ->dehydrated(false),
+        $schemas = [];
 
-                    Forms\Components\Placeholder::make('total_items')
-                        ->label('Total Item')
-                        ->content(fn($record) => $record?->total_items ?? 0),
+        // SECTION: Data Rombongan
+        $schemas[] = Forms\Components\Section::make('Data Rombongan')
+            ->schema([
+                Forms\Components\TextInput::make('nama_rombongan')
+                    ->label('Nama Rombongan')
+                    ->disabled()
+                    ->dehydrated(false),
 
-                    Forms\Components\Placeholder::make('total_nilai')
-                        ->label('Total Nilai')
-                        ->content(
-                            fn($record) =>
-                            $record ? 'Rp ' . number_format($record->total_nilai, 0, ',', '.') : 'Rp 0'
-                        ),
-                ])->columns(3),
+                Forms\Components\Placeholder::make('total_items')
+                    ->label('Total Item')
+                    ->content(fn($record) => $record?->total_items ?? 0),
 
-            Forms\Components\Section::make('Detail Item dalam Rombongan')
-                ->description('Verifikasi setiap field pada item yang dikirim')
-                ->schema([
-                    Forms\Components\Placeholder::make('items_table')
-                        ->label('')
-                        ->content(function ($record) {
-                            if (!$record) {
-                                return 'Tidak ada data';
-                            }
+                Forms\Components\Placeholder::make('total_nilai')
+                    ->label('Total Nilai')
+                    ->content(
+                        fn($record) =>
+                        $record ? 'Rp ' . number_format($record->total_nilai, 0, ',', '.') : 'Rp 0'
+                    ),
+            ])
+            ->columns(3);
 
-                            $grouped = $record->getGroupedItemsWithFields();
+        // SECTION: Detail Item - Loop per Type (Accordion)
+        $record = $form->getRecord();
 
-                            if (empty($grouped)) {
-                                return 'Tidak ada item dalam rombongan ini';
-                            }
+        if ($record) {
+            $grouped = $record->getGroupedItemsWithFields();
 
-                            $html = '<div class="space-y-8">';
+            foreach ($grouped as $type => $data) {
+                // ✅ SECTION ACCORDION PER TYPE (PL, Tender, dll)
+                $schemas[] = Forms\Components\Section::make('📦 ' . strtoupper($data['label']))
+                    ->description(count($data['items']) . ' item')
+                    ->schema([
+                        Forms\Components\Placeholder::make("items_table_{$type}")
+                            ->label('')
+                            ->content(function () use ($data) {
+                                $html = '<div class="space-y-6">';
 
-                            foreach ($grouped as $type => $data) {
-                                $html .= '<div class="border rounded-lg p-6 bg-white dark:bg-gray-800">';
-
-                                // Header jenis item
-                                $html .= '<h3 class="text-xl font-bold text-primary-600 dark:text-primary-400 mb-4">';
-                                $html .= '📦 ' . strtoupper($data['label']);
-                                $html .= '</h3>';
-
-                                // Loop setiap item
                                 foreach ($data['items'] as $item) {
                                     $progress = $item['progress'];
 
-                                    // Sub-header nama item dengan button centang semua
-                                    $html .= '<div class="mb-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">';
-                                    $html .= '<div class="flex justify-between items-center mb-2">';
-                                    $html .= '<h4 class="text-lg font-semibold">Item: ' . htmlspecialchars($item['nama_pekerjaan']) . '</h4>';
-                                    $html .= '<div class="flex items-center gap-3">';
+                                    // HEADER ITEM
+                                    $html .= '<div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">';
+                                    $html .= '<div class="flex justify-between items-center mb-4">';
+                                    $html .= '<h4 class="text-lg font-semibold text-gray-900 dark:text-white">Item: ' . htmlspecialchars($item['nama_pekerjaan']) . '</h4>';
 
                                     // Button Centang Semua
                                     if ($progress['percentage'] < 100) {
-                                        $html .= '<button ';
-                                        $html .= 'type="button" ';
+                                        $html .= '<button type="button" ';
                                         $html .= 'onclick="event.preventDefault(); event.stopPropagation(); verifyAllFields(' . $item['rombongan_item_id'] . ')" ';
                                         $html .= 'class="px-3 py-1.5 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition">';
-                                        $html .= 'Centang Semua';
+                                        $html .= '✓ Centang Semua';
                                         $html .= '</button>';
                                     }
 
                                     $html .= '</div>';
-                                    $html .= '</div>';
 
-                                    // Tabel field
-                                    $html .= '<div class="overflow-x-auto mb-6">';
-                                    $html .= '<table class="w-full border-collapse border border-gray-300 dark:border-gray-600">';
+                                    // TABEL FIELD
+                                    $html .= '<div class="overflow-x-auto">';
+                                    $html .= '<table class="w-full border-collapse border border-gray-300 dark:border-gray-600 text-sm">';
 
-                                    // Table header
-                                    $html .= '<thead>';
-                                    $html .= '<tr class="bg-gray-100 dark:bg-gray-700">';
+                                    // Table Header
+                                    $html .= '<thead><tr class="bg-gray-100 dark:bg-gray-700">';
                                     $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold w-16">No</th>';
                                     $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold">Uraian</th>';
                                     $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold">Keterangan</th>';
                                     $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center font-semibold w-48">Verifikasi</th>';
                                     $html .= '<th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold w-64">Catatan</th>';
-                                    $html .= '</tr>';
-                                    $html .= '</thead>';
+                                    $html .= '</tr></thead>';
 
-                                    // Table body
+                                    // Table Body
                                     $html .= '<tbody>';
-
                                     $no = 1;
+
                                     foreach ($item['fields'] as $field) {
                                         $isVerified = $field['is_verified'];
                                         $fieldValue = $field['field_value'];
                                         $fieldName = $field['field_name'];
                                         $fieldLabel = $field['field_label'];
                                         $keterangan = $field['keterangan'] ?? '';
-
-                                        // Tentukan apakah field paten (tidak ada checkbox)
                                         $isPatenField = in_array($fieldName, ['nama_opd', 'tanggal_dibuat']);
 
                                         // Format nilai
@@ -136,7 +121,7 @@ class RombonganVerifikatorResource extends Resource
                                             }
                                         }
 
-                                        // ✅ FIX: Generate URL yang benar untuk file
+                                        // Handle file preview
                                         $isImageField = false;
                                         $isPdfField = false;
                                         $fileUrl = null;
@@ -144,11 +129,8 @@ class RombonganVerifikatorResource extends Resource
 
                                         if ($fieldValue && $fieldValue !== '-') {
                                             $cleanFilename = trim($fieldValue);
-
-                                            // Cek apakah ini PDF
                                             $isPdfField = str_ends_with(strtolower($cleanFilename), '.pdf');
 
-                                            // Cek apakah ini gambar
                                             if (!$isPdfField) {
                                                 $imageKeywords = ['foto', 'gambar', 'image', 'photo', 'picture', 'realisasi'];
                                                 foreach ($imageKeywords as $keyword) {
@@ -169,22 +151,12 @@ class RombonganVerifikatorResource extends Resource
                                                 }
                                             }
 
-                                            // Generate URL jika file adalah gambar atau PDF
                                             if ($isPdfField || $isImageField) {
                                                 try {
-                                                    // ✅ CEK FILE EXISTS DULU
                                                     $fileExists = Storage::disk('private')->exists($cleanFilename);
-
                                                     if ($fileExists) {
-                                                        // ✅ ENCODE PATH UNTUK URL
                                                         $encodedPath = urlencode($cleanFilename);
                                                         $fileUrl = route('private.file', ['path' => $encodedPath]);
-                                                    } else {
-                                                        \Log::warning('File not found for field', [
-                                                            'field_name' => $fieldName,
-                                                            'path' => $cleanFilename,
-                                                            'full_path' => Storage::disk('private')->path($cleanFilename),
-                                                        ]);
                                                     }
                                                 } catch (\Exception $e) {
                                                     \Log::error('Error generating file URL:', [
@@ -195,11 +167,8 @@ class RombonganVerifikatorResource extends Resource
                                             }
                                         }
 
-                                        // Tentukan row class
-                                        $rowClass = '';
-                                        if (!$isPatenField && $isVerified) {
-                                            $rowClass = 'bg-green-50 dark:bg-green-900/20';
-                                        }
+                                        // Row class
+                                        $rowClass = (!$isPatenField && $isVerified) ? 'bg-green-50 dark:bg-green-900/20' : '';
 
                                         $html .= '<tr class="' . $rowClass . '">';
 
@@ -211,116 +180,47 @@ class RombonganVerifikatorResource extends Resource
                                         $html .= htmlspecialchars($fieldLabel);
                                         $html .= '</td>';
 
-                                        // Kolom Keterangan (dengan preview gambar/PDF)
+                                        // Kolom Keterangan (File Preview)
                                         $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3">';
 
-                                        if ($isPdfField) {
-                                            if ($fileExists && $fileUrl) {
-                                                // ✅ PREVIEW PDF DENGAN FILE YANG ADA
-                                                $html .= '<div class="space-y-3">';
-                                                $html .= '<div class="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition cursor-pointer" onclick="event.preventDefault(); event.stopPropagation(); previewPdf(\'' . addslashes($fileUrl) . '\', \'' . addslashes(htmlspecialchars(basename($cleanFilename))) . '\')">';
-                                                $html .= '<div class="flex-shrink-0 p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">';
-                                                $html .= '<svg class="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>';
-                                                $html .= '</div>';
-                                                $html .= '<div class="flex-1 min-w-0">';
-                                                $html .= '<div class="font-medium text-gray-900 dark:text-gray-100 truncate">' . htmlspecialchars(basename($cleanFilename)) . '</div>';
-                                                $html .= '<div class="text-sm text-green-600 dark:text-green-400">✓ File tersedia • Klik untuk preview</div>';
-                                                $html .= '</div>';
-                                                $html .= '</div>';
-
-                                                $html .= '<div class="flex flex-wrap gap-2">';
-                                                // $html .= '<button type="button" onclick="event.preventDefault(); event.stopPropagation(); previewPdf(\'' . addslashes($fileUrl) . '\', \'' . addslashes(htmlspecialchars(basename($cleanFilename))) . '\')" class="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition inline-flex items-center gap-1">';
-                                                // $html .= '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>';
-                                                // $html .= 'Preview';
-                                                $html .= '</button>';
-                                                $html .= '<a href="' . $fileUrl . '" target="_blank" onclick="event.stopPropagation()" class="px-3 py-1.5 text-sm font-medium bg-gray-600 text-white rounded hover:bg-gray-700 transition inline-flex items-center gap-1">';
-                                                $html .= '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>';
-                                                $html .= 'Buka Tab Baru';
-                                                $html .= '</a>';
-                                                $html .= '</div>';
-                                                $html .= '</div>';
-                                            } else {
-                                                // ✅ FILE PDF TIDAK DITEMUKAN
-                                                $html .= '<div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">';
-                                                $html .= '<div class="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">';
-                                                $html .= '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>';
-                                                $html .= '<div>';
-                                                $html .= '<div class="font-medium">File PDF tidak ditemukan</div>';
-                                                $html .= '<div class="text-xs mt-1">' . htmlspecialchars($cleanFilename) . '</div>';
-                                                $html .= '</div>';
-                                                $html .= '</div>';
-                                                $html .= '</div>';
-                                            }
-                                        } elseif ($isImageField) {
-                                            if ($fileExists && $fileUrl) {
-                                                // ✅ PREVIEW GAMBAR DENGAN FILE YANG ADA
-                                                $html .= '<div class="flex items-center gap-3">';
-                                                $html .= '<img src="' . $fileUrl . '" ';
-                                                $html .= 'alt="Preview" ';
-                                                $html .= 'class="w-32 h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition" ';
-                                                $html .= 'onclick="event.preventDefault(); event.stopPropagation(); openImageModal(\'' . addslashes($fileUrl) . '\')" ';
-                                                $html .= 'onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Crect fill=\'%23fee\' width=\'100\' height=\'100\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23c00\' font-size=\'12\'%3EError%3C/text%3E%3C/svg%3E\'"';
-                                                $html .= '>';
-                                                $html .= '<div class="text-xs text-gray-500 dark:text-gray-400">';
-                                                $html .= '<a href="' . $fileUrl . '" target="_blank" onclick="event.stopPropagation()" class="text-primary-600 hover:underline">Lihat full</a>';
-                                                $html .= '<div class="mt-1 text-green-600 dark:text-green-400">✓ ' . htmlspecialchars(basename($cleanFilename)) . '</div>';
-                                                $html .= '</div>';
-                                                $html .= '</div>';
-                                            } else {
-                                                // ✅ FILE GAMBAR TIDAK DITEMUKAN
-                                                $html .= '<div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">';
-                                                $html .= '<div class="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">';
-                                                $html .= '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>';
-                                                $html .= '<div>';
-                                                $html .= '<div class="font-medium">Gambar tidak ditemukan</div>';
-                                                $html .= '<div class="text-xs mt-1">' . htmlspecialchars($cleanFilename) . '</div>';
-                                                $html .= '</div>';
-                                                $html .= '</div>';
-                                                $html .= '</div>';
-                                            }
+                                        if ($isPdfField && $fileExists && $fileUrl) {
+                                            $html .= '<div class="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition cursor-pointer" onclick="event.preventDefault(); event.stopPropagation(); previewPdf(\'' . addslashes($fileUrl) . '\', \'' . addslashes(htmlspecialchars(basename($cleanFilename))) . '\')">';
+                                            $html .= '<svg class="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>';
+                                            $html .= '<div><div class="font-medium text-gray-900 dark:text-gray-100">' . htmlspecialchars(basename($cleanFilename)) . '</div>';
+                                            $html .= '<div class="text-sm text-green-600 dark:text-green-400">✓ Klik untuk preview</div></div>';
+                                            $html .= '</div>';
+                                        } elseif ($isImageField && $fileExists && $fileUrl) {
+                                            $html .= '<div class="flex items-center gap-3">';
+                                            $html .= '<img src="' . $fileUrl . '" alt="Preview" class="w-32 h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition" onclick="event.preventDefault(); event.stopPropagation(); openImageModal(\'' . addslashes($fileUrl) . '\')">';
+                                            $html .= '<div class="text-xs text-gray-500"><a href="' . $fileUrl . '" target="_blank" class="text-primary-600 hover:underline">Lihat full</a>';
+                                            $html .= '<div class="mt-1 text-green-600">✓ ' . htmlspecialchars(basename($cleanFilename)) . '</div></div>';
+                                            $html .= '</div>';
                                         } else {
-                                            // Text biasa
                                             $html .= htmlspecialchars($fieldValue ?? '-');
                                         }
 
                                         $html .= '</td>';
 
-                                        // KOLOM VERIFIKASI
+                                        // Kolom Verifikasi
                                         $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center">';
 
                                         if ($isPatenField) {
-                                            $html .= '<div class="flex items-center justify-center gap-2">';
-                                            $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100 border border-gray-300 dark:border-gray-700">';
-                                            $html .= '<svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>';
-                                            $html .= 'Paten';
-                                            $html .= '</span>';
-                                            $html .= '<span class="text-xs text-gray-500">(tidak diverifikasi)</span>';
-                                            $html .= '</div>';
+                                            $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100">🔒 Paten</span>';
                                         } else {
                                             $checkboxId = 'verify_' . $item['rombongan_item_id'] . '_' . $fieldName;
                                             $checked = $isVerified ? 'checked' : '';
 
                                             $html .= '<div class="flex items-center justify-center gap-3">';
                                             $html .= '<label class="flex items-center cursor-pointer">';
-                                            $html .= '<input type="checkbox" ';
-                                            $html .= 'id="' . $checkboxId . '" ';
-                                            $html .= 'class="field-checkbox rounded border-gray-300 text-primary-600 focus:ring-primary-500" ';
-                                            $html .= 'data-rombongan-item-id="' . $item['rombongan_item_id'] . '" ';
-                                            $html .= 'data-field-name="' . $fieldName . '" ';
-                                            $html .= $checked . ' ';
-                                            $html .= 'onchange="handleVerificationChange(' . $item['rombongan_item_id'] . ', \'' . $fieldName . '\', this.checked)"';
-                                            $html .= '>';
-                                            $html .= '<span class="ml-2 text-sm">Verifikasi</span>';
-                                            $html .= '</label>';
+                                            $html .= '<input type="checkbox" id="' . $checkboxId . '" class="field-checkbox rounded border-gray-300 text-primary-600" ';
+                                            $html .= 'data-rombongan-item-id="' . $item['rombongan_item_id'] . '" data-field-name="' . $fieldName . '" ' . $checked . ' ';
+                                            $html .= 'onchange="handleVerificationChange(' . $item['rombongan_item_id'] . ', \'' . $fieldName . '\', this.checked)">';
+                                            $html .= '<span class="ml-2 text-sm">Verifikasi</span></label>';
 
                                             if ($isVerified) {
-                                                $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">';
-                                                $html .= '✓ Sudah';
-                                                $html .= '</span>';
+                                                $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">✓ Sudah</span>';
                                             } else {
-                                                $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">';
-                                                $html .= '○ Belum';
-                                                $html .= '</span>';
+                                                $html .= '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">○ Belum</span>';
                                             }
 
                                             $html .= '</div>';
@@ -328,306 +228,286 @@ class RombonganVerifikatorResource extends Resource
 
                                         $html .= '</td>';
 
-                                        // KOLOM CATATAN
+                                        // Kolom Catatan
                                         $html .= '<td class="border border-gray-300 dark:border-gray-600 px-4 py-3">';
 
-                                        if ($isPatenField) {
-                                            $html .= '<div class="text-center">';
-                                            $html .= '<span class="text-sm text-gray-500 italic">Field paten - tidak memerlukan catatan</span>';
-                                            $html .= '</div>';
-                                        } else {
-                                            $html .= '<textarea ';
-                                            $html .= 'id="catatan_' . $item['rombongan_item_id'] . '_' . $fieldName . '" ';
-                                            $html .= 'class="w-full rounded border-gray-300 text-sm dark:bg-gray-800 dark:border-gray-600" ';
-                                            $html .= 'rows="2" ';
-                                            $html .= 'placeholder="Catatan untuk field ini..." ';
-                                            $html .= 'onblur="saveCatatan(' . $item['rombongan_item_id'] . ', \'' . $fieldName . '\', this.value)"';
-                                            $html .= '>' . htmlspecialchars($keterangan) . '</textarea>';
+                                        if (!$isPatenField) {
+                                            $html .= '<textarea id="catatan_' . $item['rombongan_item_id'] . '_' . $fieldName . '" ';
+                                            $html .= 'class="w-full rounded border-gray-300 text-sm dark:bg-gray-800 dark:border-gray-600" rows="2" ';
+                                            $html .= 'placeholder="Catatan..." onblur="saveCatatan(' . $item['rombongan_item_id'] . ', \'' . $fieldName . '\', this.value)">';
+                                            $html .= htmlspecialchars($keterangan);
+                                            $html .= '</textarea>';
                                         }
 
                                         $html .= '</td>';
-
                                         $html .= '</tr>';
                                         $no++;
                                     }
-                                    $html .= '</tbody>';
-                                    $html .= '</table>';
-                                    $html .= '</div>';
+
+                                    $html .= '</tbody></table></div></div>';
                                 }
 
                                 $html .= '</div>';
-                            }
 
-                            $html .= '</div>';
+                                // Modals + JavaScript (sama seperti sebelumnya)
+                                $html .= self::getModalsAndJavaScript();
 
-                            // ✅ MODAL GAMBAR - FIX ONCLICK
-                            $html .= '
-                            <div id="imageModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4" onclick="closeImageModal()">
-                                <div class="max-w-3xl max-h-[85vh] w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-2xl flex flex-col" onclick="event.stopPropagation()">
-                                    <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-b border-gray-300 dark:border-gray-600 flex justify-between items-center">
-                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Preview Gambar</h3>
-                                        <div class="flex gap-2">
-                                            <button type="button" onclick="window.downloadImage()" class="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                                                ⬇️ Download
-                                            </button>
-                                            <button type="button" onclick="closeImageModal()" class="px-3 py-1.5 text-sm font-medium bg-gray-600 text-white rounded hover:bg-gray-700 transition">
-                                                ✕ Tutup
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="flex-1 overflow-auto p-6 flex items-center justify-center">
-                                        <img id="modalImage" 
-                                            src="" 
-                                            class="max-w-full max-h-[60vh] w-auto h-auto object-contain rounded-lg shadow-lg border border-gray-200 dark:border-gray-700" 
-                                            onerror="this.src=\'data:image/svg+xml,%3Csvg width=\'400\' height=\'300\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Crect fill=\'%23fee\' width=\'100%25\' height=\'100%25\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23c00\' font-size=\'16\'%3EGambar tidak dapat dimuat%3C/text%3E%3C/svg%3E\'">
-                                    </div>
-                                    
-                                    <div class="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-300 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 text-center">
-                                        <span id="imageInfo">Klik di luar gambar untuk menutup</span>
-                                    </div>
-                                </div>
-                            </div>';
+                                return new HtmlString($html);
+                            }),
+                    ])
+                    ->collapsible()
+                    ->collapsed(false); // Buka semua accordion secara default
+            }
+        }
 
-                            // ✅ MODAL PDF - FIX ONCLICK
-                            $html .= '
-                            <div id="pdfModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4" onclick="closePdfModal()">
-                                <div class="relative w-full max-w-6xl h-[90vh] bg-white dark:bg-gray-800 rounded-lg shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
-                                    <div class="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 border-b border-gray-300 dark:border-gray-600">
-                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100" id="pdfModalTitle">Preview PDF</h3>
-                                        <div class="flex gap-2">
-                                            <a id="pdfDownloadBtn" href="#" download class="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition inline-flex items-center gap-1">
-                                                ⬇️ Download
-                                            </a>
-                                            <button type="button" onclick="closePdfModal()" class="px-3 py-1.5 text-sm font-medium bg-gray-600 text-white rounded hover:bg-gray-700 transition">Tutup</button>
-                                        </div>
-                                    </div>
-                                    <div class="h-full relative">
-                                        <div id="pdfLoading" class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 z-10">
-                                            <div class="text-center">
-                                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-3"></div>
-                                                <p class="text-gray-600 dark:text-gray-400">Loading PDF...</p>
-                                            </div>
-                                        </div>
-                                        <iframe id="pdfIframe" 
-                                                class="w-full h-full border-0" 
-                                                title="PDF Preview"
-                                                sandbox="allow-scripts allow-same-origin" 
-                                                onload="document.getElementById(\'pdfLoading\').classList.add(\'hidden\')"
-                                                onerror="document.getElementById(\'pdfLoading\').innerHTML=\'<div class=\\\'text-center p-8\\\'><p class=\\\'text-red-600\\\'>Gagal load PDF</p></div>\';">
-                                        </iframe>
-                                    </div>
-                                </div>
-                            </div>';
+        return $form->schema($schemas);
+    }
 
-                            $html .= <<<'JS'
+    // Method terpisah untuk Modals + JavaScript
+    protected static function getModalsAndJavaScript(): string
+    {
+        return <<<'HTML'
+<!-- Modal Gambar -->
+<div id="imageModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4" onclick="closeImageModal()">
+    <div class="w-full max-w-3xl max-h-[85vh] bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-2xl flex flex-col" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 bg-gray-100 dark:bg-gray-700 border-b border-gray-300 dark:border-gray-600 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Preview Gambar</h3>
+            <div class="flex gap-2">
+                <button type="button" onclick="downloadImage()" class="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition inline-flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Download
+                </button>
+                <button type="button" onclick="closeImageModal()" class="px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                    ✕ Tutup
+                </button>
+            </div>
+        </div>
+        <div class="flex-1 overflow-auto p-8 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+            <img id="modalImage" src="" class="max-w-full max-h-[80vh] w-auto h-auto rounded-lg shadow-2xl border-2 border-gray-200 dark:border-gray-700">
+        </div>
+        <div class="px-6 py-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-300 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-400 text-center">
+            <span id="imageInfo">Klik di luar gambar atau tekan ESC untuk menutup</span>
+        </div>
+    </div>
+</div>
+
+<!-- Modal PDF -->
+<div id="pdfModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-95 flex items-center justify-center p-4" onclick="closePdfModal()">
+    <div class="relative w-full max-w-6xl h-[90vh] bg-white dark:bg-gray-800 rounded-lg shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+        <div class="flex justify-between items-center px-6 py-4 bg-gray-100 dark:bg-gray-700 border-b border-gray-300 dark:border-gray-600">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100" id="pdfModalTitle">Preview PDF</h3>
+            <div class="flex gap-2">
+                <a id="pdfDownloadBtn" href="#" download class="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition inline-flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Download PDF
+                </a>
+                <button type="button" onclick="closePdfModal()" class="px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                    ✕ Tutup
+                </button>
+            </div>
+        </div>
+        <div class="relative h-[calc(95vh-5rem)]">
+            <div id="pdfLoading" class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 z-10">
+                <div class="text-center">
+                    <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+                    <p class="text-gray-600 dark:text-gray-400 font-medium">Loading PDF...</p>
+                </div>
+            </div>
+            <iframe id="pdfIframe" 
+                    class="w-full h-full border-0" 
+                    title="PDF Preview"
+                    sandbox="allow-scripts allow-same-origin" 
+                    onload="document.getElementById('pdfLoading').classList.add('hidden')"
+                    onerror="document.getElementById('pdfLoading').innerHTML='<div class=\'text-center p-8\'><p class=\'text-red-600 font-medium\'>❌ Gagal memuat PDF</p></div>';">
+            </iframe>
+        </div>
+    </div>
+</div>
+
 <script>
-    // ✅ PREVENT FORM SUBMISSION
-    document.addEventListener('DOMContentLoaded', function() {
-        // Prevent form submission on button clicks
-        document.querySelectorAll('button[type="button"]').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            });
-        });
-    });
-
-    function handleVerificationChange(rombonganItemId, fieldName, isChecked) {
-        fetch("/verifikator/rombongan-verifikators/verify-field", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-TOKEN": document.querySelector("meta[name='csrf-token']").content
-            },
-            body: JSON.stringify({
-                rombongan_item_id: rombonganItemId,
-                field_name: fieldName,
-                is_verified: isChecked
-            })
+function handleVerificationChange(rombonganItemId, fieldName, isChecked) {
+    fetch("/verifikator/rombongan-verifikators/verify-field", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": document.querySelector("meta[name='csrf-token']").content
+        },
+        body: JSON.stringify({
+            rombongan_item_id: rombonganItemId,
+            field_name: fieldName,
+            is_verified: isChecked
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const checkbox = document.getElementById('verify_' + rombonganItemId + '_' + fieldName);
-                if (checkbox) {
-                    const row = checkbox.closest("tr");
-                    if (row) {
-                        if (isChecked) {
-                            row.classList.add("bg-green-50", "dark:bg-green-900/20");
-                        } else {
-                            row.classList.remove("bg-green-50", "dark:bg-green-900/20");
-                        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const checkbox = document.getElementById('verify_' + rombonganItemId + '_' + fieldName);
+            if (checkbox) {
+                const row = checkbox.closest("tr");
+                if (row) {
+                    if (isChecked) {
+                        row.classList.add("bg-green-50", "dark:bg-green-900/20");
+                    } else {
+                        row.classList.remove("bg-green-50", "dark:bg-green-900/20");
                     }
-                    
-                    const badge = checkbox.closest("td").querySelector(".inline-flex");
-                    if (badge) {
-                        if (isChecked) {
-                            badge.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
-                            badge.textContent = "✓ Sudah";
-                        } else {
-                            badge.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100";
-                            badge.textContent = "○ Belum";
-                        }
+                }
+                
+                const badge = checkbox.closest("td").querySelector(".inline-flex:last-child");
+                if (badge) {
+                    if (isChecked) {
+                        badge.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
+                        badge.textContent = "✓ Sudah";
+                    } else {
+                        badge.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100";
+                        badge.textContent = "○ Belum";
                     }
                 }
             }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("Gagal menyimpan verifikasi. Silakan coba lagi.");
-        });
-    }
-    
-    function saveCatatan(rombonganItemId, fieldName, catatan) {
-        fetch("/verifikator/rombongan-verifikators/save-catatan", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": document.querySelector("meta[name='csrf-token']").content
-            },
-            body: JSON.stringify({
-                rombongan_item_id: rombonganItemId,
-                field_name: fieldName,
-                catatan: catatan
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log("Catatan tersimpan");
-            }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-        });
-    }
-    
-    function verifyAllFields(rombonganItemId) {
-        if (!confirm("Centang semua field untuk item ini?")) {
-            return;
         }
-        
-        const btn = event.target;
-        btn.disabled = true;
-        btn.textContent = "Memproses...";
-        
-        fetch("/verifikator/rombongan-verifikators/verify-all-fields", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-TOKEN": document.querySelector("meta[name='csrf-token']").content
-            },
-            body: JSON.stringify({
-                rombongan_item_id: rombonganItemId
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const checkboxes = document.querySelectorAll('input[data-rombongan-item-id="' + rombonganItemId + '"]');
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = true;
-                    const row = checkbox.closest("tr");
-                    if (row) {
-                        row.classList.add("bg-green-50", "dark:bg-green-900/20");
-                    }
-                    const badge = checkbox.closest("td").querySelector(".inline-flex");
-                    if (badge) {
-                        badge.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
-                        badge.textContent = "✓ Sudah";
-                    }
-                });
-                
-                btn.style.display = "none";
-                alert("✓ Semua field berhasil diverifikasi!");
-            }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            btn.disabled = false;
-            btn.textContent = "✓ Centang Semua";
-            alert("Gagal centang semua field. Silakan coba lagi.");
-        });
-    }
-    
-    // ✅ FUNGSI GAMBAR - FIXED
-    function openImageModal(imageUrl) {
-        const modal = document.getElementById("imageModal");
-        const modalImage = document.getElementById("modalImage");
-        const imageInfo = document.getElementById("imageInfo");
-        
-        modalImage.src = imageUrl;
-        
-        const filename = imageUrl.split('/').pop();
-        imageInfo.textContent = 'Preview: ' + decodeURIComponent(filename);
-        
-        modal.classList.remove("hidden");
-        document.body.style.overflow = "hidden";
-        
-        window.downloadImage = function() {
-            const link = document.createElement('a');
-            link.href = imageUrl;
-            link.download = decodeURIComponent(filename);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        };
-    }
-    
-    function closeImageModal() {
-        document.getElementById("imageModal").classList.add("hidden");
-        document.body.style.overflow = "auto";
-    }
-    
-    // ✅ FUNGSI PDF - FIXED
-    function previewPdf(pdfUrl, filename) {
-        const modal = document.getElementById("pdfModal");
-        const iframe = document.getElementById("pdfIframe");
-        const loading = document.getElementById("pdfLoading");
-        
-        // Reset state
-        loading.classList.remove("hidden");
-        iframe.src = "";
-        
-        // Set data
-        document.getElementById("pdfModalTitle").textContent = "Preview: " + filename;
-        document.getElementById("pdfDownloadBtn").href = pdfUrl;
-        document.getElementById("pdfDownloadBtn").download = filename;
-        
-        // Show modal first
-        modal.classList.remove("hidden");
-        document.body.style.overflow = "hidden";
-        
-        // Then load PDF
-        setTimeout(() => {
-            iframe.src = pdfUrl;
-        }, 100);
-    }
-    
-    function closePdfModal() {
-        const modal = document.getElementById("pdfModal");
-        const iframe = document.getElementById("pdfIframe");
-        
-        modal.classList.add("hidden");
-        iframe.src = "";
-        document.body.style.overflow = "auto";
-    }
-    
-    // ESC key handler
-    document.addEventListener("keydown", function(e) {
-        if (e.key === "Escape") {
-            closeImageModal();
-            closePdfModal();
-        }
-    });
-</script>
-JS;
+    })
+    .catch(error => console.error("Error:", error));
+}
 
-                            return new HtmlString($html);
-                        }),
-                ]),
-        ]);
+function saveCatatan(rombonganItemId, fieldName, catatan) {
+    fetch("/verifikator/rombongan-verifikators/save-catatan", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": document.querySelector("meta[name='csrf-token']").content
+        },
+        body: JSON.stringify({
+            rombongan_item_id: rombonganItemId,
+            field_name: fieldName,
+            catatan: catatan
+        })
+    })
+    .then(response => response.json())
+    .then(data => data.success && console.log("Catatan tersimpan"))
+    .catch(error => console.error("Error:", error));
+}
+
+function verifyAllFields(rombonganItemId) {
+    if (!confirm("Centang semua field untuk item ini?")) return;
+    
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = "Memproses...";
+    
+    fetch("/verifikator/rombongan-verifikators/verify-all-fields", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": document.querySelector("meta[name='csrf-token']").content
+        },
+        body: JSON.stringify({ rombongan_item_id: rombonganItemId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.querySelectorAll('input[data-rombongan-item-id="' + rombonganItemId + '"]').forEach(checkbox => {
+                checkbox.checked = true;
+                const row = checkbox.closest("tr");
+                if (row) row.classList.add("bg-green-50", "dark:bg-green-900/20");
+                const badge = checkbox.closest("td").querySelector(".inline-flex:last-child");
+                if (badge) {
+                    badge.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
+                    badge.textContent = "✓ Sudah";
+                }
+            });
+            btn.style.display = "none";
+            alert("✓ Semua field berhasil diverifikasi!");
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        btn.disabled = false;
+        btn.textContent = "✓ Centang Semua";
+    });
+}
+
+// ✅ FUNGSI GAMBAR - DENGAN DOWNLOAD
+let currentImageUrl = '';
+
+function openImageModal(imageUrl) {
+    currentImageUrl = imageUrl;
+    const modalImage = document.getElementById("modalImage");
+    const imageInfo = document.getElementById("imageInfo");
+    
+    modalImage.src = imageUrl;
+    
+    const filename = imageUrl.split('/').pop();
+    imageInfo.textContent = 'File: ' + decodeURIComponent(filename);
+    
+    document.getElementById("imageModal").classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+}
+
+function downloadImage() {
+    if (!currentImageUrl) return;
+    
+    const filename = currentImageUrl.split('/').pop();
+    const link = document.createElement('a');
+    link.href = currentImageUrl;
+    link.download = decodeURIComponent(filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function closeImageModal() {
+    document.getElementById("imageModal").classList.add("hidden");
+    document.body.style.overflow = "auto";
+    currentImageUrl = '';
+}
+
+// ✅ FUNGSI PDF - DENGAN DOWNLOAD
+function previewPdf(pdfUrl, filename) {
+    const modal = document.getElementById("pdfModal");
+    const iframe = document.getElementById("pdfIframe");
+    const loading = document.getElementById("pdfLoading");
+    const downloadBtn = document.getElementById("pdfDownloadBtn");
+    
+    // Reset state
+    loading.classList.remove("hidden");
+    iframe.src = "";
+    
+    // Set data
+    document.getElementById("pdfModalTitle").textContent = "Preview: " + filename;
+    downloadBtn.href = pdfUrl;
+    downloadBtn.download = filename;
+    
+    // Show modal
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+    
+    // Load PDF
+    setTimeout(() => {
+        iframe.src = pdfUrl;
+    }, 100);
+}
+
+function closePdfModal() {
+    const modal = document.getElementById("pdfModal");
+    const iframe = document.getElementById("pdfIframe");
+    
+    modal.classList.add("hidden");
+    iframe.src = "";
+    document.body.style.overflow = "auto";
+}
+
+// ✅ ESC KEY HANDLER
+document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+        closeImageModal();
+        closePdfModal();
+    }
+});
+</script>
+HTML;
     }
 
     public static function table(Table $table): Table

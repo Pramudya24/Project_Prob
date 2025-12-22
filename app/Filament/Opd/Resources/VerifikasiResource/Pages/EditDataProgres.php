@@ -242,7 +242,9 @@ class EditDataProgres extends EditRecord
           $this->makeFileField('summary_report', $rombonganItemId, $rombonganItem, $item)
             ->label('Summary Report')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
+            ->disk('private')
             ->directory('summary-reports')
+            ->visibility('private')
             ->downloadable()
             ->openable(),
         ])
@@ -329,7 +331,9 @@ class EditDataProgres extends EditRecord
           $this->makeFileField('bast_document', $rombonganItemId, $rombonganItem, $item)
             ->label('Upload BAST')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
-            ->directory('bast-documents')
+            ->disk('private')
+            ->directory('bast-document')
+            ->visibility('private')
             ->hidden(fn(Forms\Get $get) => $get("items.{$rombonganItemId}.serah_terima_pekerjaan") !== 'BAST')
             ->downloadable()
             ->openable(),
@@ -352,8 +356,163 @@ class EditDataProgres extends EditRecord
   // ==================== TENDER FORM SCHEMA ====================
   protected function getTenderFormSchema($rombonganItemId, $item, $rombonganItem): array
   {
-    // Sama seperti PL
-    return $this->getPlFormSchema($rombonganItemId, $item, $rombonganItem);
+    return [
+      // INFORMASI DASAR
+      Forms\Components\Section::make('Informasi Dasar')
+        ->schema([
+          $this->makeDateField('tanggal_dibuat', $rombonganItemId, $rombonganItem, $item)
+            ->label('Tanggal Dibuat')
+            ->disabled()
+            ->dehydrated(),
+
+          $this->makeField('nama_pekerjaan', $rombonganItemId, $rombonganItem, $item)
+            ->label('Nama Pekerjaan')
+            ->required()
+            ->maxLength(255),
+
+          $this->makeField('kode_rup', $rombonganItemId, $rombonganItem, $item)
+            ->label('Kode RUP')
+            ->required(),
+
+          $this->makeField('pagu_rup', $rombonganItemId, $rombonganItem, $item)
+            ->label('Pagu RUP')
+            ->required()
+            ->prefix('Rp'),
+
+          $this->makeField('kode_paket', $rombonganItemId, $rombonganItem, $item)
+            ->label('Kode Paket')
+            ->required()
+            ->maxLength(255),
+        ])
+        ->columns(2),
+
+      // DETAIL PENGADAAN
+      Forms\Components\Section::make('Detail Pengadaan')
+        ->schema([
+          $this->makeSelectField('jenis_pengadaan', $rombonganItemId, $rombonganItem, $item)
+            ->label('Jenis Pengadaan')
+            ->required()
+            ->live()
+            ->options([
+              'Barang' => 'Barang',
+              'Pekerjaan Konstruksi' => 'Pekerjaan Konstruksi',
+              'Jasa Konsultansi' => 'Jasa Konsultansi',
+              'Jasa Lainnya' => 'Jasa Lainnya',
+              'Terintegrasi' => 'Terintegrasi',
+            ]),
+
+          $this->makeFileField('summary_report', $rombonganItemId, $rombonganItem, $item)
+            ->label('Summary Report')
+            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
+            ->disk('private')
+            ->directory('summary-reports')
+            ->visibility('private')
+            ->downloadable()
+            ->openable(),
+        ])
+        ->columns(2),
+
+      // NILAI KONTRAK & KOMPONEN
+      Forms\Components\Section::make('Nilai Kontrak & Komponen')
+        ->schema([
+          $this->makeField('nilai_kontrak', $rombonganItemId, $rombonganItem, $item)
+            ->label('Nilai Kontrak')
+            ->required()
+            ->prefix('Rp')
+            ->columnSpanFull(),
+
+          // PDN/TKDN/IMPOR dengan Radio
+          Forms\Components\Grid::make()
+            ->schema([
+              Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
+                ->schema([
+                  $this->makeRadioField('pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
+                    ->label('Pilih salah satu')
+                    ->required()
+                    ->options([
+                      'PDN' => 'PDN',
+                      'TKDN' => 'TKDN',
+                      'IMPOR' => 'IMPOR',
+                    ])
+                    ->inline()
+                    ->columnSpanFull(),
+                ])
+                ->columnSpan(1),
+
+              Forms\Components\Group::make()
+                ->schema([
+                  $this->makeField('nilai_pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
+                    ->label('Nilai PDN/TKDN/IMPOR')
+                    ->disabled()
+                    ->dehydrated()
+                    ->prefix('Rp'),
+                ])
+                ->columnSpan(1),
+            ])
+            ->columns(2),
+
+          // UMK / Non UMK dengan Radio
+          Forms\Components\Grid::make()
+            ->schema([
+              Forms\Components\Fieldset::make('UMK / Non UMK')
+                ->schema([
+                  $this->makeRadioField('umk_non_umk', $rombonganItemId, $rombonganItem, $item)
+                    ->required()
+                    ->options([
+                      'UMK' => 'UMK',
+                      'Non UMK' => 'Non UMK',
+                    ])
+                    ->inline()
+                    ->columnSpanFull(),
+                ])
+                ->columnSpan(1),
+
+              $this->makeField('nilai_umk', $rombonganItemId, $rombonganItem, $item)
+                ->label('Nilai UMK')
+                ->disabled()
+                ->dehydrated()
+                ->prefix('Rp')
+                ->columnSpan(1),
+            ])
+            ->columns(2),
+        ])
+        ->columns(2),
+
+      // STATUS PEKERJAAN
+      Forms\Components\Section::make('Status Pekerjaan')
+        ->schema([
+          $this->makeSelectField('serah_terima_pekerjaan', $rombonganItemId, $rombonganItem, $item)
+            ->label('Serah Terima Pekerjaan')
+            ->required()
+            ->live()
+            ->options([
+              'BAST' => 'BAST',
+              'On Progres' => 'On Progres',
+            ]),
+
+          $this->makeFileField('BAST', $rombonganItemId, $rombonganItem, $item)
+            ->label('Upload BAST')
+            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
+            ->disk('private')
+            ->directory('BAST')
+            ->visibility('private')
+            ->hidden(fn(Forms\Get $get) => $get("items.{$rombonganItemId}.serah_terima_pekerjaan") !== 'BAST')
+            ->downloadable()
+            ->openable(),
+
+          $this->makeSelectField('penilaian_kinerja', $rombonganItemId, $rombonganItem, $item)
+            ->label('Penilaian Kinerja')
+            ->required()
+            ->options([
+              'Baik Sekali' => 'Baik Sekali',
+              'Baik' => 'Baik',
+              'Cukup' => 'Cukup',
+              'Buruk' => 'Buruk',
+              'Belum Dinilai' => 'Belum Dinilai',
+            ]),
+        ])
+        ->columns(2),
+    ];
   }
 
   // ==================== EPURCHASING FORM SCHEMA ====================
@@ -400,18 +559,20 @@ class EditDataProgres extends EditRecord
               'Terintegrasi' => 'Terintegrasi',
             ]),
 
-          // $this->makeSelectField('metode_pengadaan', $rombonganItemId, $rombonganItem, $item)
-          //   ->label('Metode Pengadaan')
-          //   ->required()
-          //   ->options([
-          //     'E-Katalog' => 'E-Katalog',
-          //     'Toko Daring' => 'Toko Daring',
-          //   ]),
+          $this->makeSelectField('metode_pengadaan', $rombonganItemId, $rombonganItem, $item)
+            ->label('Metode Pengadaan')
+            ->required()
+            ->options([
+              'E-Katalog' => 'E-Katalog',
+              'Toko Daring' => 'Toko Daring',
+            ]),
 
           $this->makeFileField('surat_pesanan', $rombonganItemId, $rombonganItem, $item)
             ->label('Surat Pesanan')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
+            ->disk('private')
             ->directory('surat_pesanan')
+            ->visibility('private')
             ->downloadable()
             ->openable(),
         ])
@@ -419,41 +580,18 @@ class EditDataProgres extends EditRecord
 
       Forms\Components\Section::make('Nilai Kontrak & Komponen')
         ->schema([
-          Forms\Components\TextInput::make('nilai_kontrak')
+          $this->makeField('nilai_kontrak', $rombonganItemId, $rombonganItem, $item)
             ->label('Nilai Kontrak')
-            ->rule('numeric')
-            ->extraInputAttributes([
-              'pattern' => '[0-9]*',
-              'inputmode' => 'numeric',
-              'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-            ])
             ->required()
-            ->live(onBlur: true)
             ->prefix('Rp')
-            ->placeholder('0')
-            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-              $pdnTkdnImpor = $get('pdn_tkdn_impor');
-              $umkNonUmk = $get('umk_non_umk');
-
-              if ($pdnTkdnImpor === 'IMPOR') {
-                $set('nilai_pdn_tkdn_impor', 0);
-              } elseif ($pdnTkdnImpor) {
-                $set('nilai_pdn_tkdn_impor', $state);
-              }
-
-              if ($umkNonUmk === 'Non UMK') {
-                $set('nilai_umk', 0);
-              } elseif ($umkNonUmk) {
-                $set('nilai_umk', $state);
-              }
-            })
             ->columnSpanFull(),
 
+          // PDN/TKDN/IMPOR dengan Radio
           Forms\Components\Grid::make()
             ->schema([
               Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
                 ->schema([
-                  Forms\Components\Radio::make('pdn_tkdn_impor')
+                  $this->makeRadioField('pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
                     ->label('Pilih salah satu')
                     ->required()
                     ->options([
@@ -461,20 +599,6 @@ class EditDataProgres extends EditRecord
                       'TKDN' => 'TKDN',
                       'IMPOR' => 'IMPOR',
                     ])
-                    ->live()
-                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                      $nilaiKontrak = $get('nilai_kontrak');
-                      if ($state === 'IMPOR') {
-                        $set('nilai_pdn_tkdn_impor', 0);
-                        $set('persentase_tkdn', null);
-                      } elseif ($state === 'PDN') {
-                        $set('nilai_pdn_tkdn_impor', $nilaiKontrak);
-                        $set('persentase_tkdn', null);
-                      } else {
-                        $set('nilai_pdn_tkdn_impor', 0);
-                        $set('persentase_tkdn', 0);
-                      }
-                    })
                     ->inline()
                     ->columnSpanFull(),
                 ])
@@ -482,120 +606,68 @@ class EditDataProgres extends EditRecord
 
               Forms\Components\Group::make()
                 ->schema([
-                  Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
+                  $this->makeField('nilai_pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
                     ->label('Nilai PDN/TKDN/IMPOR')
-                    ->numeric()
                     ->disabled()
                     ->dehydrated()
-                    ->prefix('Rp')
-                    ->visible(
-                      fn(Forms\Get $get): bool =>
-                      in_array($get('pdn_tkdn_impor'), ['PDN', 'IMPOR'])
-                    ),
-
-                  Forms\Components\Grid::make()
-                    ->schema([
-                      Forms\Components\TextInput::make('persentase_tkdn')
-                        ->label('Persentase TKDN')
-                        ->rule('numeric')
-                        ->extraInputAttributes([
-                          'pattern' => '[0-9]*',
-                          'inputmode' => 'numeric',
-                          'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
-                        ])
-                        ->suffix('%')
-                        ->minValue(0)
-                        ->maxValue(100)
-                        ->required(fn(Forms\Get $get): bool => $get('pdn_tkdn_impor') === 'TKDN')
-                        ->live(onBlur: true)
-                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                          $nilaiKontrak = $get('nilai_kontrak');
-                          $persentase = $state ?: 0;
-                          $hasil = $nilaiKontrak * ($persentase / 100);
-                          $set('nilai_pdn_tkdn_impor', $hasil);
-                        }),
-                      // Hasil otomatis (READONLY)
-                      Forms\Components\TextInput::make('nilai_pdn_tkdn_impor')
-                        ->label('Nilai TKDN')
-                        ->numeric()
-                        ->prefix('Rp')
-                        ->readonly() // Biar tidak bisa diedit
-                        ->default(0),
-                    ])
-                    ->columns(2)
-                    ->visible(
-                      fn(Forms\Get $get): bool =>
-                      $get('pdn_tkdn_impor') === 'TKDN'
-                    ),
+                    ->prefix('Rp'),
                 ])
                 ->columnSpan(1),
             ])
             ->columns(2),
 
+          // UMK / Non UMK dengan Radio
           Forms\Components\Grid::make()
             ->schema([
               Forms\Components\Fieldset::make('UMK / Non UMK')
                 ->schema([
-                  Forms\Components\Radio::make('umk_non_umk')
+                  $this->makeRadioField('umk_non_umk', $rombonganItemId, $rombonganItem, $item)
                     ->required()
                     ->options([
                       'UMK' => 'UMK',
                       'Non UMK' => 'Non UMK',
                     ])
-                    ->live()
-                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                      $nilaiKontrak = $get('nilai_kontrak');
-                      if ($state === 'Non UMK') {
-                        $set('nilai_umk', 0);
-                      } elseif ($state) {
-                        $set('nilai_umk', $nilaiKontrak);
-                      }
-                    })
                     ->inline()
                     ->columnSpanFull(),
                 ])
                 ->columnSpan(1),
 
-              Forms\Components\TextInput::make('nilai_umk')
+              $this->makeField('nilai_umk', $rombonganItemId, $rombonganItem, $item)
                 ->label('Nilai UMK')
-                ->numeric()
                 ->disabled()
                 ->dehydrated()
                 ->prefix('Rp')
                 ->columnSpan(1),
             ])
             ->columns(2),
-        ]),
+        ])
+        ->columns(2),
 
       Forms\Components\Section::make('Status Pekerjaan')
         ->schema([
-          Forms\Components\Select::make('serah_terima')
+          $this->makeSelectField('serah_terima', $rombonganItemId, $rombonganItem, $item)
             ->label('Serah Terima Pekerjaan')
+            ->required()
+            ->live()
             ->options([
               'BAST' => 'BAST',
               'On Progres' => 'On Progres',
-            ])
-            ->live()
-            ->native(false),
+            ]),
 
-          Forms\Components\FileUpload::make('bast_document')
+          $this->makeFileField('BAST', $rombonganItemId, $rombonganItem, $item)
             ->label('Upload BAST')
-            ->required(fn(Forms\Get $get): bool => $get('serah_terima') === 'BAST')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
-            ->maxSize(5120)
-            ->directory('bast-documents')
+            ->disk('private')
+            ->directory('BAST')
+            ->visibility('private')
+            ->hidden(fn(Forms\Get $get) => $get("items.{$rombonganItemId}.serah_terima") !== 'BAST')
             ->downloadable()
-            ->openable()
-            ->visible(
-              fn(Forms\Get $get): bool =>
-              $get('serah_terima') === 'BAST'
-            ),
+            ->openable(),
 
-          Forms\Components\Select::make('penilaian_kinerja')
+          $this->makeSelectField('penilaian_kinerja', $rombonganItemId, $rombonganItem, $item)
             ->label('Penilaian Kinerja')
-            ->default('-')
-            ->native(false)
-            ->disabled(), // Menonaktifkan field
+            ->disabled()
+            ->default('-'),
         ])
         ->columns(2),
     ];
@@ -719,7 +791,9 @@ class EditDataProgres extends EditRecord
           $this->makeFileField('realisasi', $rombonganItemId, $rombonganItem, $item)
             ->label('Realisasi')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
+            ->disk('private')
             ->directory('realisasi')
+            ->visibility('private')
             ->downloadable()
             ->openable(),
         ])
@@ -774,7 +848,9 @@ class EditDataProgres extends EditRecord
           $this->makeFileField('realisasi', $rombonganItemId, $rombonganItem, $item)
             ->label('Realisasi')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
+            ->disk('private')
             ->directory('realisasi')
+            ->visibility('private')
             ->downloadable()
             ->openable(),
         ])
@@ -891,7 +967,9 @@ class EditDataProgres extends EditRecord
           $this->makeFileField('realisasi', $rombonganItemId, $rombonganItem, $item)
             ->label('Realisasi')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
+            ->disk('private')
             ->directory('realisasi')
+            ->visibility('private')
             ->downloadable()
             ->openable(),
         ])
@@ -1011,7 +1089,10 @@ class EditDataProgres extends EditRecord
 
     $field = Forms\Components\FileUpload::make("items.{$rombonganItemId}.{$fieldName}")
       ->disk('private')
-      ->default($item->{$fieldName} ?? null);
+      ->default($item->{$fieldName} ?? null)
+      ->downloadable()
+      ->openable()
+      ->previewable(true);
 
     if ($isVerified) {
       $field->disabled()->dehydrated();
