@@ -176,7 +176,7 @@ class RombonganItemsTable extends BaseWidget
     private function getPlFields($item): array
     {
         return [
-            Forms\Components\Section::make('Informasi Dasar PL')
+            Forms\Components\Section::make('Informasi Dasar')
                 ->schema([
                     Forms\Components\DatePicker::make('tanggal_dibuat')
                         ->label('Tanggal dibuat')
@@ -535,7 +535,7 @@ class RombonganItemsTable extends BaseWidget
     private function getEpurcasingFields($item): array
     {
         return [
-            Forms\Components\Section::make('Informasi Dasar PL')
+            Forms\Components\Section::make('Informasi Dasar')
                 ->schema([
                     Forms\Components\DatePicker::make('tanggal_dibuat')
                         ->label('Tanggal dibuat')

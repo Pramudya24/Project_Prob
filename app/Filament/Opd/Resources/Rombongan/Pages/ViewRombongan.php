@@ -121,12 +121,12 @@ class ViewRombongan extends ViewRecord
     private function getTypeLabel(string $type): string
     {
         return match ($type) {
-            'pl' => 'PL',
+            'pl' => 'Non Tender',
             'tender' => 'Tender',
-            'epurcasing' => 'E-Purchasing',
-            'swakelola' => 'Swakelola',
-            'nontender' => 'Pencatatan Non Tender',
-            'pengadaan_darurat' => 'Pengadaan Darurat',
+            'epurcasing' => 'EPurcasing',
+            'swakelola' => 'Pencatatan Swakelola',
+            'nontender' => 'Pencatatan Pencatatan Non Tender',
+            'pengadaan_darurat' => 'Pencatatan Pengadaan Darurat',
             default => $type
         };
     }

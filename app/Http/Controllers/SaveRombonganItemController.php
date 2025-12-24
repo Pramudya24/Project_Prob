@@ -79,40 +79,6 @@ class SaveRombonganItemController extends Controller
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
         }
-    } diedit (field paten)'
-                ], 403);
-            }
-
-            // Update field value
-            $item->{$validated['field_name']} = $validated['field_value'];
-            $item->save();
-
-            Log::info('Field updated', [
-                'rombongan_item_id' => $validated['rombongan_item_id'],
-                'field_name' => $validated['field_name'],
-                'new_value' => $validated['field_value'],
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Field berhasil diupdate',
-                'data' => [
-                    'field_name' => $validated['field_name'],
-                    'field_value' => $validated['field_value'],
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error updating field', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ], 500);
-        }
     }
 
     public function bulkUpdate(Request $request)

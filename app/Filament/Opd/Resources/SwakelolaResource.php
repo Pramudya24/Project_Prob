@@ -95,10 +95,10 @@ class SwakelolaResource extends Resource
                             ->required()
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
                             ->maxSize(5120)
-                            ->disk('private')
+                            ->disk('public')
                             ->directory('realisasi')
                             ->preserveFilenames()
-                            ->visibility('private')
+                            ->visibility('public')
                             ->downloadable()
                             ->openable()
                             ->helperText('Upload file JPG/PDF (Max: 5MB)'),
@@ -160,7 +160,14 @@ class SwakelolaResource extends Resource
                     ->form([
                         Forms\Components\Select::make('rombongan_id')
                             ->label('Pilih Rombongan')
-                            ->options(Rombongan::all()->pluck('nama_rombongan', 'id'))
+                            ->options(function () {
+                                return Rombongan::all()->mapWithKeys(function ($rombongan) {
+                                    $isDisabled = $rombongan->status_pengiriman !== 'Belum Dikirim';
+                                    $label = $rombongan->nama_rombongan . ($isDisabled ? ' (' . $rombongan->status_pengiriman . ')' : '');
+                                    return [$rombongan->id => $label];
+                                })->toArray();
+                            })
+                            ->disableOptionWhen(fn($value) => Rombongan::find($value)?->status_pengiriman !== 'Belum Dikirim')
                             ->required()
                             ->searchable(),
                     ])
@@ -212,7 +219,14 @@ class SwakelolaResource extends Resource
                         ->form([
                             Forms\Components\Select::make('rombongan_id')
                                 ->label('Pilih Rombongan')
-                                ->options(Rombongan::all()->pluck('nama_rombongan', 'id'))
+                                ->options(function () {
+                                    return Rombongan::all()->mapWithKeys(function ($rombongan) {
+                                        $isDisabled = $rombongan->status_pengiriman !== 'Belum Dikirim';
+                                        $label = $rombongan->nama_rombongan . ($isDisabled ? ' (' . $rombongan->status_pengiriman . ')' : '');
+                                        return [$rombongan->id => $label];
+                                    })->toArray();
+                                })
+                                ->disableOptionWhen(fn($value) => Rombongan::find($value)?->status_pengiriman !== 'Belum Dikirim')
                                 ->required()
                                 ->searchable(),
                         ])

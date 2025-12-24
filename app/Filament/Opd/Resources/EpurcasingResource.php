@@ -108,10 +108,10 @@ class EpurcasingResource extends Resource
                             ->required()
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
                             ->maxSize(5120)
-                            ->disk('private')
+                            ->disk('public')
                             ->directory('surat_pesanan')
                             ->preserveFilenames()
-                            ->visibility('private')
+                            ->visibility('public')
                             ->downloadable()
                             ->openable()
                             ->helperText('Upload file JPG/PDF (Max: 5MB)'),
@@ -292,10 +292,10 @@ class EpurcasingResource extends Resource
                             ->required(fn(Forms\Get $get): bool => $get('serah_terima') === 'BAST')
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
                             ->maxSize(5120)
-                            ->disk('private')
+                            ->disk('public')
                             ->directory('BAST')
                             ->preserveFilenames()
-                            ->visibility('private')
+                            ->visibility('public')
                             ->downloadable()
                             ->openable()
                             ->visible(
@@ -349,7 +349,14 @@ class EpurcasingResource extends Resource
                     ->form([
                         Forms\Components\Select::make('rombongan_id')
                             ->label('Pilih Rombongan')
-                            ->options(Rombongan::all()->pluck('nama_rombongan', 'id'))
+                            ->options(function () {
+                                return Rombongan::all()->mapWithKeys(function ($rombongan) {
+                                    $isDisabled = $rombongan->status_pengiriman !== 'Belum Dikirim';
+                                    $label = $rombongan->nama_rombongan . ($isDisabled ? ' (' . $rombongan->status_pengiriman . ')' : '');
+                                    return [$rombongan->id => $label];
+                                })->toArray();
+                            })
+                            ->disableOptionWhen(fn($value) => Rombongan::find($value)?->status_pengiriman !== 'Belum Dikirim')
                             ->required()
                             ->searchable(),
                     ])
@@ -401,7 +408,14 @@ class EpurcasingResource extends Resource
                         ->form([
                             Forms\Components\Select::make('rombongan_id')
                                 ->label('Pilih Rombongan')
-                                ->options(Rombongan::all()->pluck('nama_rombongan', 'id'))
+                                ->options(function () {
+                                    return Rombongan::all()->mapWithKeys(function ($rombongan) {
+                                        $isDisabled = $rombongan->status_pengiriman !== 'Belum Dikirim';
+                                        $label = $rombongan->nama_rombongan . ($isDisabled ? ' (' . $rombongan->status_pengiriman . ')' : '');
+                                        return [$rombongan->id => $label];
+                                    })->toArray();
+                                })
+                                ->disableOptionWhen(fn($value) => Rombongan::find($value)?->status_pengiriman !== 'Belum Dikirim')
                                 ->required()
                                 ->searchable(),
                         ])

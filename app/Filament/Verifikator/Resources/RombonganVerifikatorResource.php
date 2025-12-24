@@ -153,10 +153,10 @@ class RombonganVerifikatorResource extends Resource
 
                                             if ($isPdfField || $isImageField) {
                                                 try {
-                                                    $fileExists = Storage::disk('private')->exists($cleanFilename);
+                                                    $fileExists = Storage::disk('public')->exists($cleanFilename);
                                                     if ($fileExists) {
-                                                        $encodedPath = urlencode($cleanFilename);
-                                                        $fileUrl = route('private.file', ['path' => $encodedPath]);
+                                                        // ✅ PERUBAHAN DI SINI:
+                                                        $fileUrl = Storage::disk('public')->url($cleanFilename);
                                                     }
                                                 } catch (\Exception $e) {
                                                     \Log::error('Error generating file URL:', [
@@ -619,6 +619,9 @@ HTML;
                             ->send();
                     }),
             ])
+            ->emptyStateHeading('Tidak Ada Data')
+            ->emptyStateDescription('Tidak ada data yang perlu di verifikasi.')
+            ->emptyStateIcon('heroicon-o-clipboard-document-check')
             ->defaultSort('tanggal_masuk_verifikator', 'desc');
     }
 

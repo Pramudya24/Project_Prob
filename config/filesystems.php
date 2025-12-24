@@ -48,9 +48,10 @@ return [
 
         'private' => [
             'driver' => 'local',
-            'root' => storage_path('app/private'),
-            'visibility' => 'private',
-            'url' => env('APP_URL') . '/storage/private', // Pastikan ini ada
+            'root' => storage_path('app/public'),
+            'url' => env('APP_URL') . '/storage/public', // URL untuk mengakses
+            'visibility' => 'public',
+            'throw' => false,
         ],
 
         's3' => [

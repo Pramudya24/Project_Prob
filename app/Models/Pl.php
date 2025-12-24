@@ -39,7 +39,7 @@ class Pl extends Model
 
     protected $casts = [
         'metode_pengadaan' => MetodePengadaan::class,
-        'tanggal_pls' => 'date',
+        // 'tanggal_pls' => 'date',
         'kode_rup' => 'integer',
         'pagu_rup' => 'integer',
         'nilai_kontrak' => 'decimal:2',

@@ -19,12 +19,19 @@ class ListRombonganVerifikators extends ListRecords
     // ✅ Polling interval untuk auto refresh
     protected static ?string $pollingInterval = '5s';
 
+    /** Dropdown value (belum dipakai query) */
     public string $opdSelected = '';
+
+    /** Value yang sudah diklik tombol Cari */
+    public string $opdApplied = '';
 
     public function mount(): void
     {
         parent::mount();
-        $this->opdSelected = session('filter_opd_verifikator', '');
+        
+        // Ambil dari session
+        $this->opdApplied = session('filter_opd_verifikator', '');
+        $this->opdSelected = $this->opdApplied; // Sync awal
     }
 
     #[On('opd-selected')]
@@ -37,7 +44,16 @@ class ListRombonganVerifikators extends ListRecords
 
     public function updatedOpdSelected($value): void
     {
-        session(['filter_opd_verifikator' => $value]);
+        // Hanya update selected, TIDAK applied
+        // Filter belum diterapkan sampai tombol Cari ditekan
+        session(['opd_selected_temp' => $value]);
+    }
+
+    /** ✅ Klik tombol Cari */
+    public function applyFilter(): void
+    {
+        $this->opdApplied = $this->opdSelected;
+        session(['filter_opd_verifikator' => $this->opdApplied]);
         $this->resetTable();
     }
 
@@ -50,6 +66,7 @@ class ListRombonganVerifikators extends ListRecords
     {
         return view('filament.verifikator.rombongan.header-dropdown', [
             'opdSelected' => $this->opdSelected,
+            'opdApplied' => $this->opdApplied,
             'opds' => Opd::orderBy('code')->pluck('code', 'code'),
         ]);
     }
@@ -58,12 +75,13 @@ class ListRombonganVerifikators extends ListRecords
     {
         $model = RombonganVerifikatorResource::getModel();
 
-        if (empty($this->opdSelected)) {
+        // ✅ Pakai $opdApplied (setelah klik Cari), bukan $opdSelected
+        if (empty($this->opdApplied)) {
             return $model::query()->whereRaw('1 = 0');
         }
 
         return $model::query()
-            ->where('nama_opd', $this->opdSelected)
+            ->where('nama_opd', $this->opdApplied)
             ->where('status_pengiriman', '!=', 'Belum Dikirim');
     }
 

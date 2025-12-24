@@ -73,8 +73,9 @@ class MonitoringResource extends Resource
                     ->modalCancelActionLabel('Tutup')
                     ->slideOver(),
             ])
-            ->emptyStateHeading('Pilih OPD')
-            ->emptyStateDescription('Pilih OPD lalu klik tombol Cari untuk menampilkan data.');
+            ->emptyStateIcon('heroicon-o-clipboard-document-check')
+            ->emptyStateHeading('Tidak Ada Data');
+            // ->emptyStateDescription('Pilih OPD lalu klik tombol Cari untuk menampilkan data.');
     }
 
     public static function getPages(): array

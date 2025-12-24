@@ -5,29 +5,22 @@
 
             {{-- Dropdown OPD --}}
             <div class="flex items-center gap-2">
-                <label class="text-sm font-medium">Pilih OPD:</label>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Pilih OPD:
+                </label>
 
                 <select
                     wire:model="opdSelected"
-                    class="
-                    w-64 rounded-lg border
-                    border-gray-600
-                    bg-gray-800
-                    text-white
-                    shadow-sm
-                    focus:border-primary-500
-                    focus:ring-primary-500
-                    dark:border-gray-700
-                    dark:bg-gray-800
-                    dark:text-white
-                ">
+                    class="w-64 rounded-lg border border-gray-300 bg-white text-gray-900 shadow-sm
+                           focus:border-primary-500 focus:ring-primary-500
+                           dark:border-gray-600 dark:bg-gray-800 dark:text-white">
 
-                    <option value="" class="bg-gray-800 text-gray-300">
+                    <option value="" class="text-gray-400 dark:text-gray-400">
                         -- Pilih OPD --
                     </option>
 
                     @foreach ($opds as $code => $name)
-                    <option value="{{ $code }}" class="bg-gray-800 text-white">
+                    <option value="{{ $code }}" class="text-gray-900 dark:text-white">
                         {{ $code }}
                     </option>
                     @endforeach
@@ -39,7 +32,9 @@
             <button
                 wire:click="applyFilter"
                 wire:loading.attr="disabled"
-                class="relative inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-primary-500 disabled:opacity-50">
+                class="relative inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 
+                       text-sm font-semibold text-white shadow transition hover:bg-primary-500 
+                       disabled:opacity-50">
                 
                 {{-- Spinner --}}
                 <svg
@@ -62,14 +57,15 @@
 
         {{-- Info UX --}}
         @if ($opdSelected && $opdSelected !== $opdApplied)
-        <div class="mt-3 text-sm text-warning-600">
+        <div class="mt-3 text-sm text-amber-600 dark:text-amber-400">
             Klik <b>Cari</b> untuk menampilkan data dari OPD yang dipilih
         </div>
         @endif
 
         {{-- Warning belum pilih OPD --}}
         @if (!$opdApplied)
-        <div class="mt-4 rounded-lg bg-danger-50 px-4 py-3 text-sm text-danger-600">
+        <div class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 
+                    dark:bg-red-900/20 dark:text-red-400">
             Silakan pilih OPD dan klik tombol <b>Cari</b> untuk melihat data.
         </div>
         @endif

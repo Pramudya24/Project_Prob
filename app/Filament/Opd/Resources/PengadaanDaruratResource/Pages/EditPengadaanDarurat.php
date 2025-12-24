@@ -13,12 +13,23 @@ class EditPengadaanDarurat extends EditRecord
     // ✅ TAMBAHKAN INI - Redirect setelah edit
     protected function getRedirectUrl(): string
     {
-        return PlResource::getUrl('index');
+        return PengadaanDaruratResource::getUrl('index');
     }
 
     // ✅ OPSIONAL: Notifikasi sukses edit
     protected function getSavedNotificationTitle(): ?string
     {
         return 'Data PL berhasil diperbarui';
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction()
+                ->label('Simpan'), // Ubah "Create" jadi "Simpan"
+            
+            $this->getCancelFormAction()
+                ->label('Batal'), // Ubah "Cancel" jadi "Batal"
+        ];
     }
 }

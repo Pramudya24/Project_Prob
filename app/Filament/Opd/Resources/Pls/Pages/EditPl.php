@@ -23,4 +23,15 @@ class EditPl extends EditRecord
     {
         return 'Data PL berhasil diperbarui';
     }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction()
+                ->label('Simpan'), // Ubah "Create" jadi "Simpan"
+            
+            $this->getCancelFormAction()
+                ->label('Batal'), // Ubah "Cancel" jadi "Batal"
+        ];
+    }
 }

@@ -20,34 +20,35 @@ class RombonganResource extends Resource
     protected static ?string $navigationLabel = 'Pengajuan';
     protected static ?int $navigationSort = 8;
     protected static ?string $pluralModelLabel = 'Pengajuan';
+    
     public static function getModelLabel(): string
     {
         return 'Pengajuan';
     }
 
     public static function form(Form $form): Form
-{
-    return $form
-        ->schema([
-            Forms\Components\Hidden::make('nama_rombongan')
-                ->default(function () {
-                    $user = auth()->user();
-                    $lastRombongan = \App\Models\Rombongan::where('nama_opd', $user->opd_code)
-                        ->latest('id')
-                        ->first();
-                    
-                    if ($lastRombongan) {
-                        // Ambil nomor terakhir dari format "Rombongan-001"
-                        preg_match('/Rombongan-(\d+)/', $lastRombongan->nama_rombongan, $matches);
-                        $nextNumber = isset($matches[1]) ? (intval($matches[1]) + 1) : 1;
-                    } else {
-                        $nextNumber = 1;
-                    }
-                    
-                    return 'Rombongan-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
-                }),
-        ]);
-}
+    {
+        return $form
+            ->schema([
+                Forms\Components\Hidden::make('nama_rombongan')
+                    ->default(function () {
+                        $user = auth()->user();
+                        $lastRombongan = \App\Models\Rombongan::where('nama_opd', $user->opd_code)
+                            ->latest('id')
+                            ->first();
+                        
+                        if ($lastRombongan) {
+                            // Ambil nomor terakhir dari format "Rombongan-001"
+                            preg_match('/Rombongan-(\d+)/', $lastRombongan->nama_rombongan, $matches);
+                            $nextNumber = isset($matches[1]) ? (intval($matches[1]) + 1) : 1;
+                        } else {
+                            $nextNumber = 1;
+                        }
+                        
+                        return 'Rombongan-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+                    }),
+            ]);
+    }
 
     public static function table(Table $table): Table
     {
@@ -71,11 +72,7 @@ class RombonganResource extends Resource
                     ->label('Status')
                     ->badge()
                     ->color(fn($state) => match ($state) {
-                        'Belum Dikirim' => 'gray',           // ← TAMBAH INI
-                        'Terkirim ke Verifikator' => 'info',
-                        'Data Progres' => 'warning',
-                        'Data Sudah Progres' => 'success',
-                        'Data Akhir' => 'primary',           // ← TAMBAH INI
+                        'Belum Dikirim' => 'gray',
                         default => 'gray',
                     }),
                     
@@ -85,92 +82,73 @@ class RombonganResource extends Resource
                     ->sortable(),
             ])
             ->actions([
-            Tables\Actions\ViewAction::make(),
+                Tables\Actions\ViewAction::make(),
 
-            // Tombol EDIT: bisa edit jika belum dikirim atau status Data Progres
-            Tables\Actions\EditAction::make()
-                ->visible(function ($record) {
-                    return in_array($record->status_pengiriman, [
-                        'Belum Dikirim',
-                        'Data Progres'
-                    ]);
-                }),
+                // ✅ Tombol EDIT: hanya untuk yang belum dikirim
+                Tables\Actions\EditAction::make()
+                    ->visible(fn($record) => $record->status_pengiriman === 'Belum Dikirim'),
 
-            // Tombol KIRIM: hanya muncul untuk status Belum Dikirim atau Data Progres
-            Tables\Actions\Action::make('send')
-                ->label('Kirim ke Verifikator')
-                ->icon('heroicon-o-paper-airplane')
-                ->color('primary')
-                ->visible(function ($record) {
-                    return in_array($record->status_pengiriman, [
-                        'Belum Dikirim',
-                        'Data Progres'
-                    ]);
-                })
-                ->requiresConfirmation()
-                ->modalHeading('Kirim Rombongan ke Verifikator')
-                ->modalDescription(function ($record) {
-                    if ($record->status_pengiriman === 'Data Progres') {
-                        return 'Data yang sudah diperbaiki akan dikirim ulang ke verifikator. Apakah Anda yakin?';
-                    }
-                    return 'Apakah Anda yakin ingin mengirim rombongan ini ke verifikator?';
-                })
-                ->modalSubmitActionLabel('Ya, Kirim')
-                ->action(function ($record) {
-                    // Cek apakah ada item dalam rombongan
-                    if ($record->total_items === 0) {
+                // ✅ Tombol KIRIM: hanya untuk yang belum dikirim
+                Tables\Actions\Action::make('send')
+                    ->label('Kirim ke Verifikator')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('primary')
+                    ->visible(fn($record) => $record->status_pengiriman === 'Belum Dikirim')
+                    ->requiresConfirmation()
+                    ->modalHeading('Kirim Rombongan ke Verifikator')
+                    ->modalDescription('Apakah Anda yakin ingin mengirim rombongan ini ke verifikator?')
+                    ->modalSubmitActionLabel('Ya, Kirim')
+                    ->action(function ($record) {
+                        // Cek apakah ada item dalam rombongan
+                        if ($record->total_items === 0) {
+                            Notification::make()
+                                ->title('Gagal Mengirim')
+                                ->body('Rombongan harus memiliki minimal 1 item.')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        $record->update([
+                            'status_pengiriman' => 'Terkirim ke Verifikator',
+                            'tanggal_masuk_verifikator' => now(),
+                        ]);
+
                         Notification::make()
-                            ->title('Gagal Mengirim')
-                            ->body('Rombongan harus memiliki minimal 1 item.')
-                            ->danger()
+                            ->title('✅ Berhasil Dikirim')
+                            ->body('Rombongan berhasil dikirim ke verifikator.')
+                            ->success()
                             ->send();
-                        return;
-                    }
+                    }),
 
-                    $record->update([
-                        'status_pengiriman' => 'Terkirim ke Verifikator',
-                        'tanggal_masuk_verifikator' => now(),
-                    ]);
-
-                    $message = $record->status_pengiriman === 'Data Progres' 
-                        ? 'Data berhasil dikirim ulang ke verifikator.'
-                        : 'Rombongan berhasil dikirim ke verifikator.';
-
-                    Notification::make()
-                        ->title('✅ Berhasil Dikirim')
-                        ->body($message)
-                        ->success()
-                        ->send();
-                }),
-
-            Tables\Actions\DeleteAction::make()
-                ->visible(fn($record) => $record->status_pengiriman === 'Belum Dikirim'),
-        ])
-        ->bulkActions([
-            Tables\Actions\BulkActionGroup::make([
-                Tables\Actions\DeleteBulkAction::make(),
-            ]),
-        ]);
+                // ✅ Tombol DELETE: hanya untuk yang belum dikirim
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn($record) => $record->status_pengiriman === 'Belum Dikirim'),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
+            ->emptyStateHeading('Tidak Ada Data')
+            ->emptyStateDescription('Belum ada rombongan yang dibuat.')
+            ->emptyStateIcon('heroicon-o-user-group');
     }
 
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListRombongans::route('/'),
-            // 'create' => Pages\CreateRombongan::route('/create'),
             'edit' => Pages\EditRombongan::route('/{record}/edit'),
             'view' => Pages\ViewRombongan::route('/{record}'),
         ];
     }
     
+    // ✅ FILTER: Hanya tampilkan data dengan status "Belum Dikirim"
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->where('nama_opd', auth()->user()->opd_code) // ← TAMBAH FILTER OPD
-            ->whereIn('status_pengiriman', [
-                'Belum Dikirim',              // ← Data baru
-                'Terkirim ke Verifikator',    // ← Data di verifikator
-                'Data Progres',               // ← Data perlu perbaikan
-        ]);
+            ->where('nama_opd', auth()->user()->opd_code)
+            ->where('status_pengiriman', 'Belum Dikirim');
     }
 }

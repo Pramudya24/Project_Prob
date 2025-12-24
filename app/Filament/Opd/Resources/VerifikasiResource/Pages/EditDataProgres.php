@@ -11,6 +11,8 @@ use Filament\Forms\Form;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Notifications\Notification;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class EditDataProgres extends EditRecord
 {
@@ -37,15 +39,17 @@ class EditDataProgres extends EditRecord
 
     foreach ($rombonganItems as $rombonganItem) {
       if ($rombonganItem->item) {
-        $formData['items'][$rombonganItem->id] = $rombonganItem->item->toArray();
+        $itemArray = $rombonganItem->item->toArray();
+
+        // ✅ BIARKAN FILE PATH TETAP ADA, JANGAN DI-NULL
+        // Filament akan handle preview otomatis
+        $formData['items'][$rombonganItem->id] = $itemArray;
       }
     }
 
-    // Debug - cek data yang akan di-fill
     \Log::info('EditDataProgres - Form Data:', [
       'rombongan_id' => $this->record->id,
       'total_items' => count($formData['items'] ?? []),
-      'form_data' => $formData
     ]);
 
     // Fill form
@@ -77,9 +81,9 @@ class EditDataProgres extends EditRecord
                                 <p class="text-sm text-yellow-700 dark:text-yellow-300 whitespace-pre-wrap">' .
             htmlspecialchars($record->keterangan_verifikasi ?? 'Tidak ada catatan umum') .
             '</p>
-                                <div class="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800 flex items-center gap-4 text-xs text-yellow-600 dark:text-yellow-400">
+                                <div class="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800 flex items-center gap-4 text-md text-yellow-600 dark:text-yellow-400">
                                     <span>📅 Dikembalikan: ' . $record->tanggal_verifikasi?->format('d/m/Y H:i') . '</span>
-                                    <span>👤 Verifikator: ' . ($record->verifikator?->name ?? '-') . '</span>
+                                    <span>👤 Dari: ' . ($record->verifikator?->name ?? '-') . '</span>
                                 </div>
                             </div>
                         </div>
@@ -242,9 +246,9 @@ class EditDataProgres extends EditRecord
           $this->makeFileField('summary_report', $rombonganItemId, $rombonganItem, $item)
             ->label('Summary Report')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
-            ->disk('private')
+            ->disk('public')
             ->directory('summary-reports')
-            ->visibility('private')
+            ->visibility('public')
             ->downloadable()
             ->openable(),
         ])
@@ -255,11 +259,37 @@ class EditDataProgres extends EditRecord
         ->schema([
           $this->makeField('nilai_kontrak', $rombonganItemId, $rombonganItem, $item)
             ->label('Nilai Kontrak')
+            ->step(1)
+            ->rule('numeric')
+            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+            ->extraInputAttributes([
+              'pattern' => '[0-9]*',
+              'inputmode' => 'numeric',
+              'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+            ])
             ->required()
+            ->live(onBlur: true)
             ->prefix('Rp')
+            ->placeholder('0')
+            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+              // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+              $pdnTkdnImpor = $get("items.{$rombonganItemId}.pdn_tkdn_impor");
+              $umkNonUmk = $get("items.{$rombonganItemId}.umk_non_umk");
+
+              if ($pdnTkdnImpor === 'IMPOR') {
+                $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+              } elseif ($pdnTkdnImpor) {
+                $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $state);
+              }
+
+              if ($umkNonUmk === 'Non UMK') {
+                $set("items.{$rombonganItemId}.nilai_umk", 0);
+              } elseif ($umkNonUmk) {
+                $set("items.{$rombonganItemId}.nilai_umk", $state);
+              }
+            })
             ->columnSpanFull(),
 
-          // PDN/TKDN/IMPOR dengan Radio
           Forms\Components\Grid::make()
             ->schema([
               Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
@@ -272,6 +302,21 @@ class EditDataProgres extends EditRecord
                       'TKDN' => 'TKDN',
                       'IMPOR' => 'IMPOR',
                     ])
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                      // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                      $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                      if ($state === 'IMPOR') {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", null);
+                      } elseif ($state === 'PDN') {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $nilaiKontrak);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", null);
+                      } else {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", 0);
+                      }
+                    })
                     ->inline()
                     ->columnSpanFull(),
                 ])
@@ -280,26 +325,85 @@ class EditDataProgres extends EditRecord
               Forms\Components\Group::make()
                 ->schema([
                   $this->makeField('nilai_pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
-                    ->label('Nilai PDN/TKDN/IMPOR')
+                    ->label('Nilai IMPOR')
+                    ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                    ->numeric()
                     ->disabled()
                     ->dehydrated()
-                    ->prefix('Rp'),
+                    ->prefix('Rp')
+                    ->visible(
+                      // ✅ PAKAI FULL PATH UNTUK CONDITION
+                      fn(Forms\Get $get): bool =>
+                      in_array($get("items.{$rombonganItemId}.pdn_tkdn_impor"), ['PDN', 'IMPOR'])
+                    ),
+
+                  Forms\Components\Grid::make()
+                    ->schema([
+                      $this->makeField('persentase_tkdn', $rombonganItemId, $rombonganItem, $item)
+                        ->label('Persentase TKDN')
+                        ->rule('numeric')
+                        ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                        ->extraInputAttributes([
+                          'pattern' => '[0-9]*',
+                          'inputmode' => 'numeric',
+                          'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                        ])
+                        ->suffix('%')
+                        ->minValue(0)
+                        ->maxValue(100)
+                        ->required(
+                          // ✅ PAKAI FULL PATH UNTUK CONDITION
+                          fn(Forms\Get $get): bool =>
+                          $get("items.{$rombonganItemId}.pdn_tkdn_impor") === 'TKDN'
+                        )
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                          // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                          $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                          $persentase = $state ?: 0;
+                          $hasil = $nilaiKontrak * ($persentase / 100);
+                          $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $hasil);
+                        }),
+
+                      $this->makeField('nilai_pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
+                        ->label('Nilai TKDN')
+                        ->numeric()
+                        ->prefix('Rp')
+                        ->readonly()
+                        ->default(0),
+                    ])
+                    ->columns(2)
+                    ->visible(
+                      // ✅ PAKAI FULL PATH UNTUK CONDITION
+                      fn(Forms\Get $get): bool =>
+                      $get("items.{$rombonganItemId}.pdn_tkdn_impor") === 'TKDN'
+                    ),
                 ])
                 ->columnSpan(1),
             ])
             ->columns(2),
 
-          // UMK / Non UMK dengan Radio
           Forms\Components\Grid::make()
             ->schema([
               Forms\Components\Fieldset::make('UMK / Non UMK')
                 ->schema([
                   $this->makeRadioField('umk_non_umk', $rombonganItemId, $rombonganItem, $item)
+                    ->label('Pilih salah satu')
                     ->required()
                     ->options([
                       'UMK' => 'UMK',
                       'Non UMK' => 'Non UMK',
                     ])
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                      // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                      $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                      if ($state === 'Non UMK') {
+                        $set("items.{$rombonganItemId}.nilai_umk", 0);
+                      } elseif ($state) {
+                        $set("items.{$rombonganItemId}.nilai_umk", $nilaiKontrak);
+                      }
+                    })
                     ->inline()
                     ->columnSpanFull(),
                 ])
@@ -307,6 +411,8 @@ class EditDataProgres extends EditRecord
 
               $this->makeField('nilai_umk', $rombonganItemId, $rombonganItem, $item)
                 ->label('Nilai UMK')
+                ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                ->numeric()
                 ->disabled()
                 ->dehydrated()
                 ->prefix('Rp')
@@ -331,9 +437,9 @@ class EditDataProgres extends EditRecord
           $this->makeFileField('bast_document', $rombonganItemId, $rombonganItem, $item)
             ->label('Upload BAST')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
-            ->disk('private')
+            ->disk('public')
             ->directory('bast-document')
-            ->visibility('private')
+            ->visibility('public')
             ->hidden(fn(Forms\Get $get) => $get("items.{$rombonganItemId}.serah_terima_pekerjaan") !== 'BAST')
             ->downloadable()
             ->openable(),
@@ -404,9 +510,9 @@ class EditDataProgres extends EditRecord
           $this->makeFileField('summary_report', $rombonganItemId, $rombonganItem, $item)
             ->label('Summary Report')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
-            ->disk('private')
+            ->disk('public')
             ->directory('summary-reports')
-            ->visibility('private')
+            ->visibility('public')
             ->downloadable()
             ->openable(),
         ])
@@ -417,11 +523,37 @@ class EditDataProgres extends EditRecord
         ->schema([
           $this->makeField('nilai_kontrak', $rombonganItemId, $rombonganItem, $item)
             ->label('Nilai Kontrak')
+            ->step(1)
+            ->rule('numeric')
+            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+            ->extraInputAttributes([
+              'pattern' => '[0-9]*',
+              'inputmode' => 'numeric',
+              'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+            ])
             ->required()
+            ->live(onBlur: true)
             ->prefix('Rp')
+            ->placeholder('0')
+            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+              // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+              $pdnTkdnImpor = $get("items.{$rombonganItemId}.pdn_tkdn_impor");
+              $umkNonUmk = $get("items.{$rombonganItemId}.umk_non_umk");
+
+              if ($pdnTkdnImpor === 'IMPOR') {
+                $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+              } elseif ($pdnTkdnImpor) {
+                $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $state);
+              }
+
+              if ($umkNonUmk === 'Non UMK') {
+                $set("items.{$rombonganItemId}.nilai_umk", 0);
+              } elseif ($umkNonUmk) {
+                $set("items.{$rombonganItemId}.nilai_umk", $state);
+              }
+            })
             ->columnSpanFull(),
 
-          // PDN/TKDN/IMPOR dengan Radio
           Forms\Components\Grid::make()
             ->schema([
               Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
@@ -434,6 +566,21 @@ class EditDataProgres extends EditRecord
                       'TKDN' => 'TKDN',
                       'IMPOR' => 'IMPOR',
                     ])
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                      // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                      $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                      if ($state === 'IMPOR') {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", null);
+                      } elseif ($state === 'PDN') {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $nilaiKontrak);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", null);
+                      } else {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", 0);
+                      }
+                    })
                     ->inline()
                     ->columnSpanFull(),
                 ])
@@ -442,26 +589,85 @@ class EditDataProgres extends EditRecord
               Forms\Components\Group::make()
                 ->schema([
                   $this->makeField('nilai_pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
-                    ->label('Nilai PDN/TKDN/IMPOR')
+                    ->label('Nilai IMPOR')
+                    ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                    ->numeric()
                     ->disabled()
                     ->dehydrated()
-                    ->prefix('Rp'),
+                    ->prefix('Rp')
+                    ->visible(
+                      // ✅ PAKAI FULL PATH UNTUK CONDITION
+                      fn(Forms\Get $get): bool =>
+                      in_array($get("items.{$rombonganItemId}.pdn_tkdn_impor"), ['PDN', 'IMPOR'])
+                    ),
+
+                  Forms\Components\Grid::make()
+                    ->schema([
+                      $this->makeField('persentase_tkdn', $rombonganItemId, $rombonganItem, $item)
+                        ->label('Persentase TKDN')
+                        ->rule('numeric')
+                        ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                        ->extraInputAttributes([
+                          'pattern' => '[0-9]*',
+                          'inputmode' => 'numeric',
+                          'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                        ])
+                        ->suffix('%')
+                        ->minValue(0)
+                        ->maxValue(100)
+                        ->required(
+                          // ✅ PAKAI FULL PATH UNTUK CONDITION
+                          fn(Forms\Get $get): bool =>
+                          $get("items.{$rombonganItemId}.pdn_tkdn_impor") === 'TKDN'
+                        )
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                          // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                          $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                          $persentase = $state ?: 0;
+                          $hasil = $nilaiKontrak * ($persentase / 100);
+                          $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $hasil);
+                        }),
+
+                      $this->makeField('nilai_pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
+                        ->label('Nilai TKDN')
+                        ->numeric()
+                        ->prefix('Rp')
+                        ->readonly()
+                        ->default(0),
+                    ])
+                    ->columns(2)
+                    ->visible(
+                      // ✅ PAKAI FULL PATH UNTUK CONDITION
+                      fn(Forms\Get $get): bool =>
+                      $get("items.{$rombonganItemId}.pdn_tkdn_impor") === 'TKDN'
+                    ),
                 ])
                 ->columnSpan(1),
             ])
             ->columns(2),
 
-          // UMK / Non UMK dengan Radio
           Forms\Components\Grid::make()
             ->schema([
               Forms\Components\Fieldset::make('UMK / Non UMK')
                 ->schema([
                   $this->makeRadioField('umk_non_umk', $rombonganItemId, $rombonganItem, $item)
+                    ->label('Pilih salah satu')
                     ->required()
                     ->options([
                       'UMK' => 'UMK',
                       'Non UMK' => 'Non UMK',
                     ])
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                      // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                      $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                      if ($state === 'Non UMK') {
+                        $set("items.{$rombonganItemId}.nilai_umk", 0);
+                      } elseif ($state) {
+                        $set("items.{$rombonganItemId}.nilai_umk", $nilaiKontrak);
+                      }
+                    })
                     ->inline()
                     ->columnSpanFull(),
                 ])
@@ -469,6 +675,8 @@ class EditDataProgres extends EditRecord
 
               $this->makeField('nilai_umk', $rombonganItemId, $rombonganItem, $item)
                 ->label('Nilai UMK')
+                ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                ->numeric()
                 ->disabled()
                 ->dehydrated()
                 ->prefix('Rp')
@@ -493,9 +701,9 @@ class EditDataProgres extends EditRecord
           $this->makeFileField('BAST', $rombonganItemId, $rombonganItem, $item)
             ->label('Upload BAST')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
-            ->disk('private')
+            ->disk('public')
             ->directory('BAST')
-            ->visibility('private')
+            ->visibility('public')
             ->hidden(fn(Forms\Get $get) => $get("items.{$rombonganItemId}.serah_terima_pekerjaan") !== 'BAST')
             ->downloadable()
             ->openable(),
@@ -570,23 +778,50 @@ class EditDataProgres extends EditRecord
           $this->makeFileField('surat_pesanan', $rombonganItemId, $rombonganItem, $item)
             ->label('Surat Pesanan')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
-            ->disk('private')
+            ->disk('public')
             ->directory('surat_pesanan')
-            ->visibility('private')
+            ->visibility('public')
             ->downloadable()
             ->openable(),
         ])
         ->columns(2),
 
+      // NILAI KONTRAK & KOMPONEN
       Forms\Components\Section::make('Nilai Kontrak & Komponen')
         ->schema([
           $this->makeField('nilai_kontrak', $rombonganItemId, $rombonganItem, $item)
             ->label('Nilai Kontrak')
+            ->step(1)
+            ->rule('numeric')
+            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+            ->extraInputAttributes([
+              'pattern' => '[0-9]*',
+              'inputmode' => 'numeric',
+              'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+            ])
             ->required()
+            ->live(onBlur: true)
             ->prefix('Rp')
+            ->placeholder('0')
+            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+              // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+              $pdnTkdnImpor = $get("items.{$rombonganItemId}.pdn_tkdn_impor");
+              $umkNonUmk = $get("items.{$rombonganItemId}.umk_non_umk");
+
+              if ($pdnTkdnImpor === 'IMPOR') {
+                $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+              } elseif ($pdnTkdnImpor) {
+                $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $state);
+              }
+
+              if ($umkNonUmk === 'Non UMK') {
+                $set("items.{$rombonganItemId}.nilai_umk", 0);
+              } elseif ($umkNonUmk) {
+                $set("items.{$rombonganItemId}.nilai_umk", $state);
+              }
+            })
             ->columnSpanFull(),
 
-          // PDN/TKDN/IMPOR dengan Radio
           Forms\Components\Grid::make()
             ->schema([
               Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
@@ -599,6 +834,21 @@ class EditDataProgres extends EditRecord
                       'TKDN' => 'TKDN',
                       'IMPOR' => 'IMPOR',
                     ])
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                      // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                      $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                      if ($state === 'IMPOR') {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", null);
+                      } elseif ($state === 'PDN') {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $nilaiKontrak);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", null);
+                      } else {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", 0);
+                      }
+                    })
                     ->inline()
                     ->columnSpanFull(),
                 ])
@@ -607,26 +857,85 @@ class EditDataProgres extends EditRecord
               Forms\Components\Group::make()
                 ->schema([
                   $this->makeField('nilai_pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
-                    ->label('Nilai PDN/TKDN/IMPOR')
+                    ->label('Nilai IMPOR')
+                    ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                    ->numeric()
                     ->disabled()
                     ->dehydrated()
-                    ->prefix('Rp'),
+                    ->prefix('Rp')
+                    ->visible(
+                      // ✅ PAKAI FULL PATH UNTUK CONDITION
+                      fn(Forms\Get $get): bool =>
+                      in_array($get("items.{$rombonganItemId}.pdn_tkdn_impor"), ['PDN', 'IMPOR'])
+                    ),
+
+                  Forms\Components\Grid::make()
+                    ->schema([
+                      $this->makeField('persentase_tkdn', $rombonganItemId, $rombonganItem, $item)
+                        ->label('Persentase TKDN')
+                        ->rule('numeric')
+                        ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                        ->extraInputAttributes([
+                          'pattern' => '[0-9]*',
+                          'inputmode' => 'numeric',
+                          'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                        ])
+                        ->suffix('%')
+                        ->minValue(0)
+                        ->maxValue(100)
+                        ->required(
+                          // ✅ PAKAI FULL PATH UNTUK CONDITION
+                          fn(Forms\Get $get): bool =>
+                          $get("items.{$rombonganItemId}.pdn_tkdn_impor") === 'TKDN'
+                        )
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                          // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                          $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                          $persentase = $state ?: 0;
+                          $hasil = $nilaiKontrak * ($persentase / 100);
+                          $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $hasil);
+                        }),
+
+                      $this->makeField('nilai_pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
+                        ->label('Nilai TKDN')
+                        ->numeric()
+                        ->prefix('Rp')
+                        ->readonly()
+                        ->default(0),
+                    ])
+                    ->columns(2)
+                    ->visible(
+                      // ✅ PAKAI FULL PATH UNTUK CONDITION
+                      fn(Forms\Get $get): bool =>
+                      $get("items.{$rombonganItemId}.pdn_tkdn_impor") === 'TKDN'
+                    ),
                 ])
                 ->columnSpan(1),
             ])
             ->columns(2),
 
-          // UMK / Non UMK dengan Radio
           Forms\Components\Grid::make()
             ->schema([
               Forms\Components\Fieldset::make('UMK / Non UMK')
                 ->schema([
                   $this->makeRadioField('umk_non_umk', $rombonganItemId, $rombonganItem, $item)
+                    ->label('Pilih salah satu')
                     ->required()
                     ->options([
                       'UMK' => 'UMK',
                       'Non UMK' => 'Non UMK',
                     ])
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                      // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                      $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                      if ($state === 'Non UMK') {
+                        $set("items.{$rombonganItemId}.nilai_umk", 0);
+                      } elseif ($state) {
+                        $set("items.{$rombonganItemId}.nilai_umk", $nilaiKontrak);
+                      }
+                    })
                     ->inline()
                     ->columnSpanFull(),
                 ])
@@ -634,6 +943,8 @@ class EditDataProgres extends EditRecord
 
               $this->makeField('nilai_umk', $rombonganItemId, $rombonganItem, $item)
                 ->label('Nilai UMK')
+                ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                ->numeric()
                 ->disabled()
                 ->dehydrated()
                 ->prefix('Rp')
@@ -657,9 +968,9 @@ class EditDataProgres extends EditRecord
           $this->makeFileField('BAST', $rombonganItemId, $rombonganItem, $item)
             ->label('Upload BAST')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
-            ->disk('private')
+            ->disk('public')
             ->directory('BAST')
-            ->visibility('private')
+            ->visibility('public')
             ->hidden(fn(Forms\Get $get) => $get("items.{$rombonganItemId}.serah_terima") !== 'BAST')
             ->downloadable()
             ->openable(),
@@ -728,12 +1039,40 @@ class EditDataProgres extends EditRecord
         ])
         ->columns(2),
 
+      // NILAI KONTRAK & KOMPONEN
       Forms\Components\Section::make('Nilai Kontrak & Komponen')
         ->schema([
           $this->makeField('nilai_kontrak', $rombonganItemId, $rombonganItem, $item)
             ->label('Nilai Kontrak')
+            ->step(1)
+            ->rule('numeric')
+            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+            ->extraInputAttributes([
+              'pattern' => '[0-9]*',
+              'inputmode' => 'numeric',
+              'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+            ])
             ->required()
+            ->live(onBlur: true)
             ->prefix('Rp')
+            ->placeholder('0')
+            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+              // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+              $pdnTkdnImpor = $get("items.{$rombonganItemId}.pdn_tkdn_impor");
+              $umkNonUmk = $get("items.{$rombonganItemId}.umk_non_umk");
+
+              if ($pdnTkdnImpor === 'IMPOR') {
+                $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+              } elseif ($pdnTkdnImpor) {
+                $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $state);
+              }
+
+              if ($umkNonUmk === 'Non UMK') {
+                $set("items.{$rombonganItemId}.nilai_umk", 0);
+              } elseif ($umkNonUmk) {
+                $set("items.{$rombonganItemId}.nilai_umk", $state);
+              }
+            })
             ->columnSpanFull(),
 
           Forms\Components\Grid::make()
@@ -741,12 +1080,28 @@ class EditDataProgres extends EditRecord
               Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
                 ->schema([
                   $this->makeRadioField('pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
+                    ->label('Pilih salah satu')
                     ->required()
                     ->options([
                       'PDN' => 'PDN',
                       'TKDN' => 'TKDN',
                       'IMPOR' => 'IMPOR',
                     ])
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                      // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                      $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                      if ($state === 'IMPOR') {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", null);
+                      } elseif ($state === 'PDN') {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $nilaiKontrak);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", null);
+                      } else {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", 0);
+                      }
+                    })
                     ->inline()
                     ->columnSpanFull(),
                 ])
@@ -755,10 +1110,59 @@ class EditDataProgres extends EditRecord
               Forms\Components\Group::make()
                 ->schema([
                   $this->makeField('nilai_pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
-                    ->label('Nilai PDN/TKDN/IMPOR')
+                    ->label('Nilai IMPOR')
+                    ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                    ->numeric()
                     ->disabled()
                     ->dehydrated()
-                    ->prefix('Rp'),
+                    ->prefix('Rp')
+                    ->visible(
+                      // ✅ PAKAI FULL PATH UNTUK CONDITION
+                      fn(Forms\Get $get): bool =>
+                      in_array($get("items.{$rombonganItemId}.pdn_tkdn_impor"), ['PDN', 'IMPOR'])
+                    ),
+
+                  Forms\Components\Grid::make()
+                    ->schema([
+                      $this->makeField('persentase_tkdn', $rombonganItemId, $rombonganItem, $item)
+                        ->label('Persentase TKDN')
+                        ->rule('numeric')
+                        ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                        ->extraInputAttributes([
+                          'pattern' => '[0-9]*',
+                          'inputmode' => 'numeric',
+                          'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                        ])
+                        ->suffix('%')
+                        ->minValue(0)
+                        ->maxValue(100)
+                        ->required(
+                          // ✅ PAKAI FULL PATH UNTUK CONDITION
+                          fn(Forms\Get $get): bool =>
+                          $get("items.{$rombonganItemId}.pdn_tkdn_impor") === 'TKDN'
+                        )
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                          // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                          $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                          $persentase = $state ?: 0;
+                          $hasil = $nilaiKontrak * ($persentase / 100);
+                          $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $hasil);
+                        }),
+
+                      $this->makeField('nilai_pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
+                        ->label('Nilai TKDN')
+                        ->numeric()
+                        ->prefix('Rp')
+                        ->readonly()
+                        ->default(0),
+                    ])
+                    ->columns(2)
+                    ->visible(
+                      // ✅ PAKAI FULL PATH UNTUK CONDITION
+                      fn(Forms\Get $get): bool =>
+                      $get("items.{$rombonganItemId}.pdn_tkdn_impor") === 'TKDN'
+                    ),
                 ])
                 ->columnSpan(1),
             ])
@@ -769,11 +1173,22 @@ class EditDataProgres extends EditRecord
               Forms\Components\Fieldset::make('UMK / Non UMK')
                 ->schema([
                   $this->makeRadioField('umk_non_umk', $rombonganItemId, $rombonganItem, $item)
+                    ->label('Pilih salah satu')
                     ->required()
                     ->options([
                       'UMK' => 'UMK',
                       'Non UMK' => 'Non UMK',
                     ])
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                      // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                      $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                      if ($state === 'Non UMK') {
+                        $set("items.{$rombonganItemId}.nilai_umk", 0);
+                      } elseif ($state) {
+                        $set("items.{$rombonganItemId}.nilai_umk", $nilaiKontrak);
+                      }
+                    })
                     ->inline()
                     ->columnSpanFull(),
                 ])
@@ -781,21 +1196,14 @@ class EditDataProgres extends EditRecord
 
               $this->makeField('nilai_umk', $rombonganItemId, $rombonganItem, $item)
                 ->label('Nilai UMK')
+                ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                ->numeric()
                 ->disabled()
                 ->dehydrated()
                 ->prefix('Rp')
                 ->columnSpan(1),
             ])
             ->columns(2),
-
-          $this->makeFileField('realisasi', $rombonganItemId, $rombonganItem, $item)
-            ->label('Realisasi')
-            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
-            ->disk('private')
-            ->directory('realisasi')
-            ->visibility('private')
-            ->downloadable()
-            ->openable(),
         ])
         ->columns(2),
     ];
@@ -848,20 +1256,48 @@ class EditDataProgres extends EditRecord
           $this->makeFileField('realisasi', $rombonganItemId, $rombonganItem, $item)
             ->label('Realisasi')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
-            ->disk('private')
+            // ->disk('public')
             ->directory('realisasi')
-            ->visibility('private')
+            ->visibility('public')
             ->downloadable()
             ->openable(),
         ])
         ->columns(2),
 
+      // NILAI KONTRAK & KOMPONEN
       Forms\Components\Section::make('Nilai Kontrak & Komponen')
         ->schema([
           $this->makeField('nilai_kontrak', $rombonganItemId, $rombonganItem, $item)
             ->label('Nilai Kontrak')
+            ->step(1)
+            ->rule('numeric')
+            ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+            ->extraInputAttributes([
+              'pattern' => '[0-9]*',
+              'inputmode' => 'numeric',
+              'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+            ])
             ->required()
+            ->live(onBlur: true)
             ->prefix('Rp')
+            ->placeholder('0')
+            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+              // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+              $pdnTkdnImpor = $get("items.{$rombonganItemId}.pdn_tkdn_impor");
+              $umkNonUmk = $get("items.{$rombonganItemId}.umk_non_umk");
+
+              if ($pdnTkdnImpor === 'IMPOR') {
+                $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+              } elseif ($pdnTkdnImpor) {
+                $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $state);
+              }
+
+              if ($umkNonUmk === 'Non UMK') {
+                $set("items.{$rombonganItemId}.nilai_umk", 0);
+              } elseif ($umkNonUmk) {
+                $set("items.{$rombonganItemId}.nilai_umk", $state);
+              }
+            })
             ->columnSpanFull(),
 
           Forms\Components\Grid::make()
@@ -869,13 +1305,28 @@ class EditDataProgres extends EditRecord
               Forms\Components\Fieldset::make('PDN/TKDN/IMPOR')
                 ->schema([
                   $this->makeRadioField('pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
+                    ->label('Pilih salah satu')
                     ->required()
                     ->options([
                       'PDN' => 'PDN',
                       'TKDN' => 'TKDN',
                       'IMPOR' => 'IMPOR',
                     ])
-
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                      // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                      $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                      if ($state === 'IMPOR') {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", null);
+                      } elseif ($state === 'PDN') {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $nilaiKontrak);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", null);
+                      } else {
+                        $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", 0);
+                        $set("items.{$rombonganItemId}.persentase_tkdn", 0);
+                      }
+                    })
                     ->inline()
                     ->columnSpanFull(),
                 ])
@@ -884,10 +1335,59 @@ class EditDataProgres extends EditRecord
               Forms\Components\Group::make()
                 ->schema([
                   $this->makeField('nilai_pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
-                    ->label('Nilai PDN/TKDN/IMPOR')
+                    ->label('Nilai IMPOR')
+                    ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                    ->numeric()
                     ->disabled()
                     ->dehydrated()
-                    ->prefix('Rp'),
+                    ->prefix('Rp')
+                    ->visible(
+                      // ✅ PAKAI FULL PATH UNTUK CONDITION
+                      fn(Forms\Get $get): bool =>
+                      in_array($get("items.{$rombonganItemId}.pdn_tkdn_impor"), ['PDN', 'IMPOR'])
+                    ),
+
+                  Forms\Components\Grid::make()
+                    ->schema([
+                      $this->makeField('persentase_tkdn', $rombonganItemId, $rombonganItem, $item)
+                        ->label('Persentase TKDN')
+                        ->rule('numeric')
+                        ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                        ->extraInputAttributes([
+                          'pattern' => '[0-9]*',
+                          'inputmode' => 'numeric',
+                          'onkeypress' => 'return event.charCode >= 48 && event.charCode <= 57'
+                        ])
+                        ->suffix('%')
+                        ->minValue(0)
+                        ->maxValue(100)
+                        ->required(
+                          // ✅ PAKAI FULL PATH UNTUK CONDITION
+                          fn(Forms\Get $get): bool =>
+                          $get("items.{$rombonganItemId}.pdn_tkdn_impor") === 'TKDN'
+                        )
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                          // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                          $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                          $persentase = $state ?: 0;
+                          $hasil = $nilaiKontrak * ($persentase / 100);
+                          $set("items.{$rombonganItemId}.nilai_pdn_tkdn_impor", $hasil);
+                        }),
+
+                      $this->makeField('nilai_pdn_tkdn_impor', $rombonganItemId, $rombonganItem, $item)
+                        ->label('Nilai TKDN')
+                        ->numeric()
+                        ->prefix('Rp')
+                        ->readonly()
+                        ->default(0),
+                    ])
+                    ->columns(2)
+                    ->visible(
+                      // ✅ PAKAI FULL PATH UNTUK CONDITION
+                      fn(Forms\Get $get): bool =>
+                      $get("items.{$rombonganItemId}.pdn_tkdn_impor") === 'TKDN'
+                    ),
                 ])
                 ->columnSpan(1),
             ])
@@ -898,11 +1398,22 @@ class EditDataProgres extends EditRecord
               Forms\Components\Fieldset::make('UMK / Non UMK')
                 ->schema([
                   $this->makeRadioField('umk_non_umk', $rombonganItemId, $rombonganItem, $item)
+                    ->label('Pilih salah satu')
                     ->required()
                     ->options([
                       'UMK' => 'UMK',
                       'Non UMK' => 'Non UMK',
                     ])
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) use ($rombonganItemId) {
+                      // ✅ PAKAI FULL PATH DENGAN $rombonganItemId
+                      $nilaiKontrak = $get("items.{$rombonganItemId}.nilai_kontrak");
+                      if ($state === 'Non UMK') {
+                        $set("items.{$rombonganItemId}.nilai_umk", 0);
+                      } elseif ($state) {
+                        $set("items.{$rombonganItemId}.nilai_umk", $nilaiKontrak);
+                      }
+                    })
                     ->inline()
                     ->columnSpanFull(),
                 ])
@@ -910,13 +1421,16 @@ class EditDataProgres extends EditRecord
 
               $this->makeField('nilai_umk', $rombonganItemId, $rombonganItem, $item)
                 ->label('Nilai UMK')
+                ->formatStateUsing(fn($state) => $state ? (int) $state : null)
+                ->numeric()
                 ->disabled()
                 ->dehydrated()
                 ->prefix('Rp')
                 ->columnSpan(1),
             ])
             ->columns(2),
-        ]),
+        ])
+        ->columns(2),
     ];
   }
 
@@ -967,9 +1481,9 @@ class EditDataProgres extends EditRecord
           $this->makeFileField('realisasi', $rombonganItemId, $rombonganItem, $item)
             ->label('Realisasi')
             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
-            ->disk('private')
+            ->disk('public')
             ->directory('realisasi')
-            ->visibility('private')
+            ->visibility('public')
             ->downloadable()
             ->openable(),
         ])
@@ -1005,8 +1519,8 @@ class EditDataProgres extends EditRecord
     if (!empty($keterangan) && !$isVerified && !$isPaten) {
       $field->helperText(new HtmlString('
                 <div class="mt-1 p-2 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 rounded">
-                    <p class="text-xs font-semibold text-yellow-800 dark:text-yellow-200">💬 Catatan Verifikator:</p>
-                    <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-1">' . nl2br(htmlspecialchars($keterangan)) . '</p>
+                    <p class="text-md font-semibold text-yellow-800 dark:text-yellow-200">Catatan Revisi:</p>
+                    <p class="text-md text-yellow-700 dark:text-yellow-300 mt-1">' . nl2br(htmlspecialchars($keterangan)) . '</p>
                 </div>
             '));
     }
@@ -1047,8 +1561,8 @@ class EditDataProgres extends EditRecord
     if (!empty($keterangan) && !$isVerified) {
       $field->helperText(new HtmlString('
                 <div class="mt-1 p-2 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 rounded">
-                    <p class="text-xs font-semibold text-yellow-800 dark:text-yellow-200">💬 Catatan Verifikator:</p>
-                    <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-1">' . nl2br(htmlspecialchars($keterangan)) . '</p>
+                    <p class="text-md font-semibold text-yellow-800 dark:text-yellow-200">Catatan Revisi:</p>
+                    <p class="text-md text-yellow-700 dark:text-yellow-300 mt-1">' . nl2br(htmlspecialchars($keterangan)) . '</p>
                 </div>
             '));
     }
@@ -1072,8 +1586,8 @@ class EditDataProgres extends EditRecord
     if (!empty($keterangan) && !$isVerified) {
       $field->helperText(new HtmlString('
                 <div class="mt-1 p-2 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 rounded">
-                    <p class="text-xs font-semibold text-yellow-800 dark:text-yellow-200">💬 Catatan Verifikator:</p>
-                    <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-1">' . nl2br(htmlspecialchars($keterangan)) . '</p>
+                    <p class="text-md font-semibold text-yellow-800 dark:text-yellow-200">Catatan Revisi:</p>
+                    <p class="text-md text-yellow-700 dark:text-yellow-300 mt-1">' . nl2br(htmlspecialchars($keterangan)) . '</p>
                 </div>
             '));
     }
@@ -1081,18 +1595,64 @@ class EditDataProgres extends EditRecord
     return $field;
   }
 
+  // protected function makeFileField($fieldName, $rombonganItemId, $rombonganItem, $item): Forms\Components\FileUpload
+  // {
+  //   $verification = $rombonganItem->getFieldVerification($fieldName);
+  //   $isVerified = $verification ? $verification->is_verified : false;
+  //   $keterangan = $verification?->keterangan ?? '';
+
+  //   $field = Forms\Components\FileUpload::make("items.{$rombonganItemId}.{$fieldName}")
+  //     ->disk('public')
+  //     ->default($item->{$fieldName} ?? null)
+  //     ->downloadable()
+  //     ->openable()
+  //     ->previewable(true)
+  //     ->preserveFilenames() // JANGAN RENAME FILE
+  //     ->getUploadedFileNameForStorageUsing(
+  //         fn($file) => $file->getClientOriginalName() // PAKAI NAMA ASLI
+  //     ); 
+
+  //   if ($isVerified) {
+  //     $field->disabled()->dehydrated();
+  //   }
+
+  //   if (!empty($keterangan) && !$isVerified) {
+  //     $field->helperText(new HtmlString('
+  //               <div class="mt-1 p-2 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 rounded">
+  //                   <p class="text-md font-semibold text-yellow-800 dark:text-yellow-200">Catatan Revisi:</p>
+  //                   <p class="text-md text-yellow-700 dark:text-yellow-300 mt-1">' . nl2br(htmlspecialchars($keterangan)) . '</p>
+  //               </div>
+  //           '));
+  //   }
+
+  //   return $field;
+  // }
+
   protected function makeFileField($fieldName, $rombonganItemId, $rombonganItem, $item): Forms\Components\FileUpload
   {
     $verification = $rombonganItem->getFieldVerification($fieldName);
     $isVerified = $verification ? $verification->is_verified : false;
     $keterangan = $verification?->keterangan ?? '';
+    $filename = $item->{$fieldName} ?? null;
 
+    // ✅ SIMPLE ORIGINAL FILAMENT FILEUPLOAD
     $field = Forms\Components\FileUpload::make("items.{$rombonganItemId}.{$fieldName}")
-      ->disk('private')
-      ->default($item->{$fieldName} ?? null)
+      ->label($this->getFileFieldLabel($fieldName))
+      ->disk('public')
+      ->directory($this->getFileDirectory($fieldName))
+      ->visibility('public')
+      ->preserveFilenames()
+      ->acceptedFileTypes(['image/*', 'application/pdf'])
+      ->maxSize(10240) // 10MB
       ->downloadable()
       ->openable()
-      ->previewable(true);
+      ->previewable(true) // ✅ BIARKAN PREVIEW STANDAR FILAMENT
+      ->columnSpanFull();
+
+    // ✅ JIKA ADA FILE LAMA, SET DEFAULT (TAPI PASTIKAN URL BENAR)
+    if ($filename && Storage::disk('public')->exists($filename)) {
+      $field->default([$filename]);
+    }
 
     if ($isVerified) {
       $field->disabled()->dehydrated();
@@ -1100,14 +1660,38 @@ class EditDataProgres extends EditRecord
 
     if (!empty($keterangan) && !$isVerified) {
       $field->helperText(new HtmlString('
-                <div class="mt-1 p-2 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 rounded">
-                    <p class="text-xs font-semibold text-yellow-800 dark:text-yellow-200">💬 Catatan Verifikator:</p>
-                    <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-1">' . nl2br(htmlspecialchars($keterangan)) . '</p>
-                </div>
-            '));
+            <div class="mt-1 p-2 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 rounded">
+                <p class="text-sm font-semibold text-yellow-800 dark:text-yellow-200">💬 Catatan Revisi:</p>
+                <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">' . nl2br(htmlspecialchars($keterangan)) . '</p>
+            </div>
+        '));
     }
 
     return $field;
+  }
+
+  // ✅ HELPER UNTUK LABEL FILE
+  protected function getFileFieldLabel(string $fieldName): string
+  {
+    return match ($fieldName) {
+      'summary_report' => 'Summary Report',
+      'bast_document', 'BAST' => 'Dokumen BAST',
+      'surat_pesanan' => 'Surat Pesanan',
+      'realisasi' => 'Dokumen Realisasi',
+      default => ucfirst(str_replace('_', ' ', $fieldName)),
+    };
+  }
+
+  // ✅ HELPER UNTUK DIRECTORY
+  protected function getFileDirectory(string $fieldName): string
+  {
+    return match ($fieldName) {
+      'summary_report' => 'summary-reports',
+      'bast_document', 'BAST' => 'bast-documents',
+      'surat_pesanan' => 'surat-pesanan',
+      'realisasi' => 'realisasi-files',
+      default => 'uploads/' . $fieldName,
+    };
   }
 
   protected function getItemTypeLabel($itemType): string
@@ -1116,12 +1700,12 @@ class EditDataProgres extends EditRecord
     $itemType = strtolower($itemType);
 
     return match ($itemType) {
-      'app\models\pl' => 'PL (Penunjukan Langsung)',
+      'app\models\pl' => 'Non Tender',
       'app\models\tender' => 'Tender',
       'app\models\epurcasing' => 'E-Purchasing',
-      'app\models\nontender' => 'Non Tender',
-      'app\models\pengadaandarurat' => 'Pengadaan Darurat',
-      'app\models\swakelola' => 'Swakelola',
+      'app\models\nontender' => 'Pencatatan Non Tender',
+      'app\models\pengadaandarurat' => 'Pencatatan Pengadaan Darurat',
+      'app\models\swakelola' => 'Pencatatan Swakelola',
       default => 'Unknown Type: ' . $itemType,
     };
   }
@@ -1151,7 +1735,8 @@ class EditDataProgres extends EditRecord
             ->success()
             ->send();
 
-          return redirect()->to(VerifikasiResource::getUrl('data-progres'));
+          // ✅ GANTI ROUTE INI
+          return redirect()->route('filament.opd.resources.verifikasis.data-verifikasi');
         }),
     ];
   }
@@ -1167,7 +1752,8 @@ class EditDataProgres extends EditRecord
       Actions\Action::make('back')
         ->label('Batal')
         ->color('gray')
-        ->url(fn() => VerifikasiResource::getUrl('data-progres')),
+        // ✅ GANTI URL INI
+        ->url(fn() => route('filament.opd.resources.verifikasis.data-verifikasi')),
     ];
   }
 
@@ -1208,6 +1794,8 @@ class EditDataProgres extends EditRecord
       ->body('Perubahan telah disimpan. Jangan lupa kirim ulang ke verifikator jika sudah selesai.')
       ->success()
       ->send();
-    $this->redirect(VerifikasiResource::getUrl('data-progres'));
+
+    // ✅ GANTI REDIRECT INI
+    $this->redirect(route('filament.opd.resources.verifikasis.data-verifikasi'));
   }
 }

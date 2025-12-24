@@ -22,7 +22,7 @@ class DataAkhir extends Page implements HasTable
     
     public function getTitle(): string
     {
-        return 'Data Akhir - Final';
+        return 'History';
     }
     
     public function table(Table $table): Table

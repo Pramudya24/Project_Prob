@@ -107,10 +107,10 @@ class PlResource extends Resource
                         Forms\Components\FileUpload::make('summary_report')
                             ->label('Summary Report')
                             ->required()
-                            ->disk('private')
+                            ->disk('public')
                             ->directory('summary-reports')
                             ->preserveFilenames()
-                            ->visibility('private')
+                            ->visibility('public')
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg'])
                             ->maxSize(5120)
                             ->downloadable()
@@ -291,10 +291,10 @@ class PlResource extends Resource
                             ->required(fn(Forms\Get $get): bool => $get('serah_terima_pekerjaan') === 'BAST')
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'])
                             ->maxSize(5120)
-                            ->disk('private')
+                            ->disk('public')
                             ->directory('bast_document')
                             ->preserveFilenames()
-                            ->visibility('private')
+                            ->visibility('public')
                             ->downloadable()
                             ->openable()
                             ->visible(
@@ -352,7 +352,14 @@ class PlResource extends Resource
                     ->form([
                         Forms\Components\Select::make('rombongan_id')
                             ->label('Pilih Rombongan')
-                            ->options(\App\Models\Rombongan::all()->pluck('nama_rombongan', 'id'))
+                            ->options(function () {
+                                return Rombongan::all()->mapWithKeys(function ($rombongan) {
+                                    $isDisabled = $rombongan->status_pengiriman !== 'Belum Dikirim';
+                                    $label = $rombongan->nama_rombongan . ($isDisabled ? ' (' . $rombongan->status_pengiriman . ')' : '');
+                                    return [$rombongan->id => $label];
+                                })->toArray();
+                            })
+                            ->disableOptionWhen(fn($value) => Rombongan::find($value)?->status_pengiriman !== 'Belum Dikirim')
                             ->required()
                             ->searchable(),
                     ])
@@ -404,7 +411,14 @@ class PlResource extends Resource
                         ->form([
                             Forms\Components\Select::make('rombongan_id')
                                 ->label('Pilih Rombongan')
-                                ->options(\App\Models\Rombongan::all()->pluck('nama_rombongan', 'id'))
+                                ->options(function () {
+                                    return Rombongan::all()->mapWithKeys(function ($rombongan) {
+                                        $isDisabled = $rombongan->status_pengiriman !== 'Belum Dikirim';
+                                        $label = $rombongan->nama_rombongan . ($isDisabled ? ' (' . $rombongan->status_pengiriman . ')' : '');
+                                        return [$rombongan->id => $label];
+                                    })->toArray();
+                                })
+                                ->disableOptionWhen(fn($value) => Rombongan::find($value)?->status_pengiriman !== 'Belum Dikirim')
                                 ->required()
                                 ->searchable(),
                         ])

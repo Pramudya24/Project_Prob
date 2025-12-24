@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Opd\Resources; // ← Tambahkan "Resources"
+namespace App\Filament\Opd\Resources;
 
-use App\Filament\Opd\Resources\VerifikasiResource\Pages; // ← Ganti ini
+use App\Filament\Opd\Resources\VerifikasiResource\Pages;
 use App\Models\Rombongan;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -30,10 +30,9 @@ class VerifikasiResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListVerifikasis::route('/'),
-            'data-progres' => Pages\DataProgres::route('/data-progres'),
-            'edit-data-progres' => Pages\EditDataProgres::route('/data-progres/{record}/edit'), // ✅ ROUTE EDIT
-            'data-sudah-progres' => Pages\DataSudahProgres::route('/data-sudah-progres'),
+            'index' => Pages\DataVerifikasi::route('/'),
+            'data-verifikasi' => Pages\DataVerifikasi::route('/data-verifikasi'),
+            'edit-data-progres' => Pages\EditDataProgres::route('/data-verifikasi/{record}/edit'),
             'data-akhir' => Pages\DataAkhir::route('/data-akhir'),
         ];
     }

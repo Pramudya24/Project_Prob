@@ -10,25 +10,30 @@ class ListVerifikasis extends ListRecords
 {
     protected static string $resource = VerifikasiResource::class;
 
+    // protected function getHeaderActions(): array
+    // {
+    //     return [
+    //         Actions\Action::make('data-verifikasi')
+    //             ->label('Data Verifikasi')
+    //             ->color('primary')
+    //             ->icon('heroicon-o-clipboard-document-check')
+    //             ->url(fn () => VerifikasiResource::getUrl('data-verifikasi')),
+                
+    //         Actions\Action::make('data-akhir')
+    //             ->label('History')
+    //             ->color('gray')
+    //             ->icon('heroicon-o-archive-box')
+    //             ->url(fn () => VerifikasiResource::getUrl('data-akhir')),
+    //     ];
+    // }
     protected function getHeaderActions(): array
     {
-        return [
-            Actions\Action::make('data-progres')
-                ->label('Data Progres')
-                ->color('primary')
-                ->url(fn () => VerifikasiResource::getUrl('data-progres')),
-                
-            Actions\Action::make('data-sudah-progres')
-                ->label('Pembuatan SPM')
-                ->color('primary')
-                ->url(fn () => VerifikasiResource::getUrl('data-sudah-progres')),
-                
-            Actions\Action::make('data-akhir')
-                ->label('History')
-                ->color('primary')
-                ->url(fn () => VerifikasiResource::getUrl('data-akhir')),
-                
-            // Actions\CreateAction::make(),
-        ];
+        return [];
+    }
+    
+    public function mount(): void
+    {
+        // Redirect otomatis ke data-verifikasi
+        redirect()->route('filament.opd.resources.verifikasis.data-verifikasi');
     }
 }

@@ -201,12 +201,12 @@ class Rombongan extends Model
     private function getTypeLabel($type): string
     {
         return match ($type) {
-            'App\Models\Pl' => 'PL',
+            'App\Models\Pl' => 'Non Tender',
             'App\Models\Tender' => 'Tender',
-            'App\Models\Epurcasing' => 'E-Purchasing',
-            'App\Models\Swakelola' => 'Swakelola',
-            'App\Models\Nontender' => 'Nontender',
-            'App\Models\PengadaanDarurat' => 'PengadaanDarurat',
+            'App\Models\Epurcasing' => 'EPurchasing',
+            'App\Models\Swakelola' => 'Pencatatan Swakelola',
+            'App\Models\Nontender' => 'Pencatatan Nontender',
+            'App\Models\PengadaanDarurat' => 'Pencatatan Pengadaan Darurat',
             default => class_basename($type)
         };
     }
